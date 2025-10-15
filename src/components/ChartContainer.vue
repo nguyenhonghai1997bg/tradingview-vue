@@ -35,7 +35,7 @@ onMounted(async () => {
     const resolution = '1';
     const endDate = new Date();
     const fromDate = new Date(endDate);
-    fromDate.setDate(endDate.getDate() - 2);
+    fromDate.setDate(endDate.getDate() - 5);
 
     const response: StockSSIDataResponse = await getStockData(symbol, resolution, fromDate, endDate);
     setDataToChart(symbol, chart, response)

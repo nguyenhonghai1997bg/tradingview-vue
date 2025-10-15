@@ -1,7 +1,8 @@
 import type { StockSSIDataResponse } from "@/DNSE_api/type";
-import { CandlestickSeries, HistogramSeries, LineSeries, type CandlestickData, type IChartApi, type UTCTimestamp } from "lightweight-charts";
-import { calculateEMA, calculateKDJ, calculateMACD, calculateRSI, calculateSMA, calculateStochRSI, calculateStochRSI_KD } from "./indicators";
+import { CandlestickSeries, createSeriesMarkers, HistogramSeries, LineSeries, type CandlestickData, type IChartApi, type UTCTimestamp } from "lightweight-charts";
+import { generateSignals } from "@/helpers/indicators";
 import { formatHistogramData, formatSeriesData } from "./data";
+import { calculateEMA, calculateKDJ, calculateMACD, calculateRSI, calculateSMA, calculateStochRSI, calculateStochRSI_KD } from "@/helpers/tradingview_indicator";
 
 export const attachPaneLegends = () => {
   const container = document.querySelector('.tv-lightweight-charts');
@@ -186,6 +187,10 @@ export const setDataToChart = (symbol: string, chart: IChartApi, response: Stock
       const close = uniqueData.map(i => i.c);
       const high = uniqueData.map(i => i.h);
       const low = uniqueData.map(i => i.l);
+
+      // Usage in your component
+      const markers = generateSignals(candlestickData);
+      createSeriesMarkers(candlestickSeries, markers);
 
       const { macd, signal, histogram } = calculateMACD(close);
       const { k, d, j } = calculateKDJ(high, low, close);

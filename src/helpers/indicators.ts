@@ -1,205 +1,193 @@
-export function calculateSMA(data: number[], period: number): number[] {
-  const result: number[] = [];
-  for (let i = 0; i < data.length; i++) {
-    if (i < period - 1) {
-      result.push(NaN);
-      continue;
+import type { CandlestickData } from "lightweight-charts";
+import { calculateFibonacci, calculateKDJ, calculateMACD, calculateRSI, calculateStochRSI, calculateStochRSI_KD } from "@/helpers/tradingview_indicator";
+export interface Candle {
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+// Hàm kiểm tra xem giá có gần một mức nào đó không (threshold là phần trăm của giá)
+export function isNearLevel(price: number, levels: number[], thresholdPercent: number = 0.005): boolean {
+  return levels.some(level => Math.abs(price - level) / level <= thresholdPercent);
+}
+
+// Hammer Pattern (Bullish Reversal)
+export function isHammer(candle: Candle): boolean {
+  const body = Math.abs(candle.close - candle.open);
+  const lowerWick = candle.open > candle.close ? candle.open - candle.low : candle.close - candle.low;
+  const upperWick = candle.open > candle.close ? candle.high - candle.open : candle.high - candle.close;
+
+  return (
+    lowerWick > 2 * body &&
+    upperWick < body &&
+    body > 0
+  );
+}
+
+// Shooting Star Pattern (Bearish Reversal)
+export function isShootingStar(candle: Candle): boolean {
+  const body = Math.abs(candle.close - candle.open);
+  const lowerWick = candle.open > candle.close ? candle.open - candle.low : candle.close - candle.low;
+  const upperWick = candle.open > candle.close ? candle.high - candle.open : candle.high - candle.close;
+
+  return (
+    upperWick > 2 * body &&
+    lowerWick < body &&
+    body > 0
+  );
+}
+
+// Bullish Engulfing Pattern
+export function isBullishEngulfing(prevCandle: Candle, currCandle: Candle): boolean {
+  return (
+    prevCandle.close < prevCandle.open && // Previous candle is bearish
+    currCandle.close > currCandle.open &&  // Current candle is bullish
+    currCandle.open < prevCandle.close &&
+    currCandle.close > prevCandle.open
+  );
+}
+
+// Bearish Engulfing Pattern
+export function isBearishEngulfing(prevCandle: Candle, currCandle: Candle): boolean {
+  return (
+    prevCandle.close > prevCandle.open && // Previous candle is bullish
+    currCandle.close < currCandle.open &&  // Current candle is bearish
+    currCandle.open > prevCandle.close &&
+    currCandle.close < prevCandle.open
+  );
+}
+
+// Hàm mới để tìm các mức hỗ trợ và kháng cự (dựa trên swing highs/lows đơn giản)
+export function findSupportResistance(data: any[], window: number = 20): { supports: { time: any, price: number }[], resistances: { time: any, price: number }[] } {
+  const supports: { time: any, price: number }[] = [];
+  const resistances: { time: any, price: number }[] = [];
+
+  for (let i = window; i < data.length - window; i++) {
+    const slice = data.slice(i - window, i + window + 1);
+    
+    // Tìm swing low cho hỗ trợ
+    const localMin = Math.min(...slice.map(c => c.low));
+    if (data[i].low === localMin) {
+      supports.push({ time: data[i].time, price: localMin });
     }
-    const slice = data.slice(i - period + 1, i + 1);
-    const avg = slice.reduce((sum, val) => sum + val, 0) / period;
-    result.push(avg);
-  }
-  return result;
-}
-
-export function calculateEMA(data: number[], period: number): number[] {
-  const result: number[] = new Array(data.length).fill(NaN);
-  if (data.length < period) return result;
-
-  // Tính SMA ban đầu
-  const initialSlice = data.slice(0, period);
-  const initialEMA = initialSlice.reduce((sum, val) => sum + val, 0) / period;
-  result[period - 1] = initialEMA;
-
-  const multiplier = 2 / (period + 1);
-  let ema = initialEMA;
-  for (let i = period; i < data.length; i++) {
-    ema = (data[i] - ema) * multiplier + ema;
-    result[i] = ema;
-  }
-  return result;
-}
-
-// 1️⃣ Tính RSI
-export function calculateRSI(data: number[], period = 14): number[] {
-  const result: number[] = new Array(data.length).fill(NaN);
-  if (data.length < period + 1) return result;
-
-  let gains = 0;
-  let losses = 0;
-
-  for (let i = 1; i <= period; i++) {
-    const diff = data[i] - data[i - 1];
-    if (diff >= 0) gains += diff;
-    else losses -= diff;
-  }
-
-  gains /= period;
-  losses /= period;
-  result[period] = 100 - 100 / (1 + gains / (losses || 0.0001));
-
-  for (let i = period + 1; i < data.length; i++) {
-    const diff = data[i] - data[i - 1];
-    const gain = diff > 0 ? diff : 0;
-    const loss = diff < 0 ? -diff : 0;
-
-    gains = (gains * (period - 1) + gain) / period;
-    losses = (losses * (period - 1) + loss) / period;
-
-    const rs = gains / (losses || 0.0001);
-    result[i] = 100 - 100 / (1 + rs);
-  }
-
-  return result;
-}
-
-// 2️⃣ Tính StochRSI
-export function calculateStochRSI(rsi: number[], stochPeriod = 14): number[] {
-  const result: number[] = new Array(rsi.length).fill(NaN);
-
-  for (let i = stochPeriod; i < rsi.length; i++) {
-    const slice = rsi.slice(i - stochPeriod, i + 1).filter(v => !isNaN(v));
-    if (slice.length < stochPeriod) continue;
-
-    const minRSI = Math.min(...slice);
-    const maxRSI = Math.max(...slice);
-    const currentRSI = rsi[i];
-
-    result[i] = maxRSI === minRSI ? 0 : (currentRSI - minRSI) / (maxRSI - minRSI);
-  }
-
-  return result;
-}
-
-// 3️⃣ Tính %K và %D (3,3)
-export function calculateStochRSI_KD(stochRSI: number[], kPeriod = 3, dPeriod = 3) {
-  const rsiK: number[] = new Array(stochRSI.length).fill(NaN);
-  const rsiD: number[] = new Array(stochRSI.length).fill(NaN);
-
-  for (let i = kPeriod - 1; i < stochRSI.length; i++) {
-    const sliceK = stochRSI.slice(i - kPeriod + 1, i + 1);
-    rsiK[i] = sliceK.reduce((a, b) => a + b, 0) / kPeriod;
-  }
-
-  for (let i = dPeriod - 1; i < rsiK.length; i++) {
-    const sliceD = rsiK.slice(i - dPeriod + 1, i + 1);
-    rsiD[i] = sliceD.reduce((a, b) => a + b, 0) / dPeriod;
-  }
-
-  return { rsiK, rsiD };
-}
-
-export function calculateMACD(
-  data: number[],
-  fastPeriod = 12,
-  slowPeriod = 26,
-  signalPeriod = 9
-) {
-  const length = data.length;
-  const macd: number[] = new Array(length).fill(NaN);
-  const signal: number[] = new Array(length).fill(NaN);
-  const histogram: number[] = new Array(length).fill(NaN);
-
-  if (length < slowPeriod) return { macd, signal, histogram };
-
-  const fastEMA = calculateEMA(data, fastPeriod);
-  const slowEMA = calculateEMA(data, slowPeriod);
-
-  // === Bước 1: tính MACD
-  for (let i = 0; i < length; i++) {
-    if (!isNaN(fastEMA[i]) && !isNaN(slowEMA[i])) {
-      macd[i] = fastEMA[i] - slowEMA[i];
+    
+    // Tìm swing high cho kháng cự
+    const localMax = Math.max(...slice.map(c => c.high));
+    if (data[i].high === localMax) {
+      resistances.push({ time: data[i].time, price: localMax });
     }
   }
 
-  // === Bước 2: lấy phần MACD hợp lệ để tính EMA signal
-  const validMacd = macd.filter(v => !isNaN(v));
-  const signalRaw = calculateEMA(validMacd, signalPeriod);
+  return { supports, resistances };
+}
 
-  // === Bước 3: gắn signal trở lại vị trí tương ứng
-  let validIndex = 0;
-  for (let i = 0; i < length; i++) {
-    if (!isNaN(macd[i])) {
-      signal[i] = signalRaw[validIndex++];
-      if (!isNaN(signal[i])) {
-        histogram[i] = macd[i] - signal[i];
-      }
-    }
+export const generateSignals = (candlestickData: CandlestickData[]) => {
+  // Extract price arrays for indicator calculations
+  const closePrices = candlestickData.map(c => c.close);
+  const highPrices = candlestickData.map(c => c.high);
+  const lowPrices = candlestickData.map(c => c.low);
+
+  // Calculate indicators
+  const rsi = calculateRSI(closePrices, 14); // RSI with 14-period
+  const stochRSI = calculateStochRSI(rsi, 14); // StochRSI with 14-period
+  const { rsiK, rsiD } = calculateStochRSI_KD(stochRSI, 3, 3); // StochRSI %K and %D
+  const { macd, signal } = calculateMACD(closePrices, 12, 26, 9); // MACD
+  const { k, d } = calculateKDJ(highPrices, lowPrices, closePrices, 9, 3); // KDJ
+  const { supports, resistances } = findSupportResistance(candlestickData, 20); // Support/Resistance
+
+  // Tích hợp thêm Fibonacci để bổ sung cho các mức hỗ trợ/kháng cự
+  let fiboLevels: number[] = [];
+  if (supports.length > 0 && resistances.length > 0) {
+    // Lấy mức hỗ trợ và kháng cự gần nhất (dựa trên time)
+    const latestSupport = supports.reduce((prev, curr) => (curr.time > prev.time ? curr : prev), supports[0]);
+    const latestResistance = resistances.reduce((prev, curr) => (curr.time > prev.time ? curr : prev), resistances[0]);
+
+    // Xác định start và end dựa trên thời gian để quyết định uptrend/downtrend
+    const start = latestSupport.time < latestResistance.time ? latestSupport.price : latestResistance.price;
+    const end = latestSupport.time < latestResistance.time ? latestResistance.price : latestSupport.price;
+
+    const fibos = calculateFibonacci(start, end);
+    fiboLevels = fibos.map(f => f.value);
   }
 
-  return { macd, signal, histogram };
-}
+  // Kết hợp các mức hỗ trợ/kháng cự với Fibonacci
+  const combinedSupports = [...supports.map(s => s.price), ...fiboLevels.filter(level => level <= Math.min(...closePrices.slice(-20)))];
+  const combinedResistances = [...resistances.map(r => r.price), ...fiboLevels.filter(level => level >= Math.max(...closePrices.slice(-20)))];
 
-export function calculateKDJ(
-  high: number[],
-  low: number[],
-  close: number[],
-  kPeriod = 9,
-  dPeriod = 3
-) {
-  const kArr: number[] = [];
-  const dArr: number[] = [];
-  const jArr: number[] = [];
+  // Generate markers
+  const markers = candlestickData.map((candle, index) => {
+    if (index === 0) return null; // Skip first candle for patterns requiring prevCandle
+    const prevCandle = candlestickData[index - 1];
+    const currentCandle: Candle = {
+      open: candle.open,
+      high: candle.high,
+      low: candle.low,
+      close: candle.close,
+    };
 
-  for (let i = 0; i < close.length; i++) {
-    if (i < kPeriod - 1) {
-      kArr.push(NaN);
-      dArr.push(NaN);
-      jArr.push(NaN);
-      continue;
+    // Check candlestick patterns
+    const isHammerPattern = isHammer(currentCandle);
+    const isShootingStarPattern = isShootingStar(currentCandle);
+    const isBullishEngulfingPattern = prevCandle && isBullishEngulfing(prevCandle, currentCandle);
+    const isBearishEngulfingPattern = prevCandle && isBearishEngulfing(prevCandle, currentCandle);
+
+    // Check proximity to combined support/resistance (kết hợp thêm fibo)
+    const isNearSupport = isNearLevel(currentCandle.low, combinedSupports, 0.005);
+    const isNearResistance = isNearLevel(currentCandle.high, combinedResistances, 0.005);
+
+    // Indicator conditions
+    const isRSIOverbought = rsi[index] >= 70;
+    const isRSIOversold = rsi[index] <= 30;
+    const isStochRSIOverbought = rsiK[index] >= 80;
+    const isStochRSIOversold = rsiK[index] <= 20;
+    const isMACDBullishCrossover = macd[index] > signal[index] && macd[index - 1] <= signal[index - 1];
+    const isMACDBearishCrossover = macd[index] < signal[index] && macd[index - 1] >= signal[index - 1];
+    const isKDJBullish = k[index] > d[index] && k[index] <= 30; // KDJ in oversold and bullish
+    const isKDJBearish = k[index] < d[index] && k[index] >= 70; // KDJ in overbought and bearish
+
+    // Signal scoring (require at least two confirming conditions)
+    let bullishScore = 0;
+    let bearishScore = 0;
+
+    // Bullish conditions (kết hợp thêm với support/fibo)
+    if (isHammerPattern && isNearSupport) bullishScore += 2;
+    if (isBullishEngulfingPattern && isNearSupport) bullishScore += 2;
+    if (isRSIOversold) bullishScore += 1;
+    if (isStochRSIOversold) bullishScore += 1;
+    if (isMACDBullishCrossover) bullishScore += 1;
+    if (isKDJBullish) bullishScore += 1;
+
+    // Bearish conditions (kết hợp thêm với resistance/fibo)
+    if (isShootingStarPattern && isNearResistance) bearishScore += 2;
+    if (isBearishEngulfingPattern && isNearResistance) bearishScore += 2;
+    if (isRSIOverbought) bearishScore += 1;
+    if (isStochRSIOverbought) bearishScore += 1;
+    if (isMACDBearishCrossover) bearishScore += 1;
+    if (isKDJBearish) bearishScore += 1;
+
+    // Generate signal if score meets threshold (e.g., >= 3)
+    if (bullishScore >= 3) {
+      return {
+        time: candle.time,
+        position: 'belowBar',
+        color: '#26a69a', // Green for LONG
+        shape: 'arrowUp',
+        text: 'LONG',
+      };
+    }
+    if (bearishScore >= 3) {
+      return {
+        time: candle.time,
+        position: 'aboveBar',
+        color: '#ef5350', // Red for SHORT
+        shape: 'arrowDown',
+        text: 'SHORT',
+      };
     }
 
-    const periodHigh = Math.max(...high.slice(i - kPeriod + 1, i + 1));
-    const periodLow = Math.min(...low.slice(i - kPeriod + 1, i + 1));
-    const currentClose = close[i];
+    return null;
+  }).filter(marker => marker !== null);
 
-    let rsv: number;
-    if (periodHigh === periodLow) {
-      rsv = 50;
-    } else {
-      rsv = ((currentClose - periodLow) / (periodHigh - periodLow)) * 100;
-    }
-
-    const prevK = (i > 0 && !isNaN(kArr[i - 1])) ? kArr[i - 1] : 50;
-    const prevD = (i > 0 && !isNaN(dArr[i - 1])) ? dArr[i - 1] : 50;
-
-    const k = (2 / 3) * prevK + (1 / 3) * rsv;
-    const d = (2 / 3) * prevD + (1 / 3) * k;
-    const j = 3 * k - 2 * d;
-
-    kArr.push(k);
-    dArr.push(d);
-    jArr.push(j);
-  }
-
-  return { k: kArr, d: dArr, j: jArr };
-}
-
-
-export interface FiboLevel {
-  level: number;   // tỷ lệ fibo (0.236, 0.382, ...)
-  value: number;   // giá trị thật tương ứng trên chart
-}
-export function calculateFibonacci(start: number, end: number): FiboLevel[] {
-  const fiboLevels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
-  const high = Math.max(start, end);
-  const low = Math.min(start, end);
-  const diff = high - low;
-
-  return fiboLevels.map(level => ({
-    level,
-    value: start > end 
-      ? start - diff * level // downtrend
-      : start + diff * level // uptrend
-  }));
-}
+  return markers;
+};
