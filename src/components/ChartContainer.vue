@@ -3,14 +3,11 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, onUnmounted } from 'vue';
-import {
-  createChart,
-  CrosshairMode,
-} from 'lightweight-charts';
+import { onMounted } from 'vue';
+import { createChart, CrosshairMode } from 'lightweight-charts';
 import { getStockData } from '@/DNSE_api/history';
 import type { StockSSIDataResponse } from '@/DNSE_api/type';
-import { attachPaneLegends, setDataToChart } from '@/helpers/chart'
+import { setDataToChart } from '@/helpers/chart'
 
 onMounted(async () => {
   const chartContainer = document.getElementById('chart-container') as HTMLDivElement;
@@ -33,7 +30,6 @@ onMounted(async () => {
     crosshair: { mode: CrosshairMode.Magnet },
   });
 
-
   try {
     const symbol = 'VN30F1M';
     const resolution = '1';
@@ -42,21 +38,10 @@ onMounted(async () => {
     fromDate.setDate(endDate.getDate() - 2);
 
     const response: StockSSIDataResponse = await getStockData(symbol, resolution, fromDate, endDate);
-
     setDataToChart(symbol, chart, response)
 
-    chart.timeScale().fitContent();
-
-    onUnmounted(() => {
-      chart.remove();
-    });
   } catch (err) {
     console.error('Failed to load stock data:', err);
   }
-
-  setTimeout(() => {
-    attachPaneLegends();
-  }, 100)
-
 });
 </script>

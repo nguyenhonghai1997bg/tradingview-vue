@@ -315,4 +315,11 @@ export const setDataToChart = (symbol: string, chart: IChartApi, response: Stock
       });
 
     }, 100)
+
+    
+  setTimeout(() => {
+    attachPaneLegends();
+  }, 100)
+
+  chart.timeScale().fitContent();
 }
