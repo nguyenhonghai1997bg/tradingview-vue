@@ -27,7 +27,7 @@ onMounted(async () => {
     leftPriceScale: { scaleMargins: { top: 0.3, bottom: 0.1 } },
     handleScroll: { mouseWheel: true, pressedMouseMove: true },
     handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
-    crosshair: { mode: CrosshairMode.Magnet },
+    crosshair: { mode: 0 },
   });
 
   try {
@@ -35,7 +35,7 @@ onMounted(async () => {
     const resolution = '1';
     const endDate = new Date();
     const fromDate = new Date(endDate);
-    fromDate.setDate(endDate.getDate() - 5);
+    fromDate.setDate(endDate.getDate() - 8);
 
     const response: StockSSIDataResponse = await getStockData(symbol, resolution, fromDate, endDate);
     setDataToChart(symbol, chart, response)

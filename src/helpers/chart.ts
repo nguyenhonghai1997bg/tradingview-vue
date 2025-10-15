@@ -130,21 +130,26 @@ export const setDataToChart = (symbol: string, chart: IChartApi, response: Stock
       scaleMargins: { top: 0.8, bottom: 0 },
     });
 
-    const macdSeries = chart.addSeries(LineSeries, { color: '#0000FF', lineWidth: 1, priceLineVisible: false });
-    const signalSeries = chart.addSeries(LineSeries, { color: '#FFA500', lineWidth: 1, priceLineVisible: false });
+    const macdSeries = chart.addSeries(LineSeries, {
+      color: '#0000FF',
+      lineWidth: 1,
+      priceLineVisible: false,
+      crosshairMarkerVisible: false, 
+    });
+    const signalSeries = chart.addSeries(LineSeries, { color: '#FFA500', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
     const histogramSeries = chart.addSeries(HistogramSeries, {
       priceFormat: { type: 'volume' },
     });
 
-    const kSeries = chart.addSeries(LineSeries, { color: '#00FF00', lineWidth: 1, priceLineVisible: false });
-    const dSeries = chart.addSeries(LineSeries, { color: '#FFFF00', lineWidth: 1, priceLineVisible: false });
-    const jSeries = chart.addSeries(LineSeries, { color: '#FF69B4', lineWidth: 1, priceLineVisible: false });
+    const kSeries = chart.addSeries(LineSeries, { color: '#00FF00', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
+    const dSeries = chart.addSeries(LineSeries, { color: '#FFFF00', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
+    const jSeries = chart.addSeries(LineSeries, { color: '#FF69B4', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
 
-    const rsiSeriesK = chart.addSeries(LineSeries, { color: '#1E90FF', lineWidth: 1, priceLineVisible: false });
-    const rsiSeriesD = chart.addSeries(LineSeries, { color: 'red', lineWidth: 1, priceLineVisible: false });
+    const rsiSeriesK = chart.addSeries(LineSeries, { color: '#1E90FF', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
+    const rsiSeriesD = chart.addSeries(LineSeries, { color: 'red', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
 
-    const sma60Series = chart.addSeries(LineSeries, { color: 'white', lineWidth: 1, priceLineVisible: false });
-    const ema15Series = chart.addSeries(LineSeries, { color: '#FFA500', lineWidth: 1, priceLineVisible: false });
+    const sma60Series = chart.addSeries(LineSeries, { color: 'white', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
+    const ema15Series = chart.addSeries(LineSeries, { color: '#FFA500', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
 
 
 
