@@ -1,0 +1,10 @@
+export const configAccount = {
+  USER_NAME: '0392660985',
+  investorId: '1001232680',
+  ACCOUNT_NO: '0001753085',
+  LOAN_PACKAGE_ID: 1306,
+  PASSWORD: '$$Hai123',
+
+  TELEGRAM_BOT_TOKEN :  '7214821714:AAEuXccDNByRGctoy5VGAXbhsQTYt_f4pfo',
+  TELEGRAM_CHAT_ID :  '-4564274925'
+};
