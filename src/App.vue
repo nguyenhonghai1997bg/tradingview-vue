@@ -12,7 +12,6 @@ import {
   type CandlestickData,
   type UTCTimestamp,
   CrosshairMode,
-  LineStyle,
 } from 'lightweight-charts';
 import { getStockData } from '@/DNSE_api/history';
 import type { StockSSIDataResponse } from '@/DNSE_api/type';
@@ -33,8 +32,6 @@ const attachPaneLegends = () => {
     { trIndex: 4, id: 'pane-2-legend' },
     { trIndex: 6, id: 'pane-3-legend' },
   ];
-
-  const tableRect = container.getBoundingClientRect();
 
   mapping.forEach(({ trIndex, id }) => {
     const tr = rows[trIndex] as HTMLTableRowElement;
@@ -95,7 +92,7 @@ onMounted(async () => {
     priceScaleId: '',
   });
   volumeSeries.priceScale().applyOptions({
-    scaleMargins: { top: 0.7, bottom: 0 },
+    scaleMargins: { top: 0.8, bottom: 0 },
   });
 
   const macdSeries = chart.addSeries(LineSeries, { color: '#0000FF', lineWidth: 1, priceLineVisible: false });
@@ -232,18 +229,20 @@ onMounted(async () => {
       if (pane0Legend) {
         pane0Legend.innerHTML = `
           <div>
-            <p style="color: #26a69a;">${symbol} ■ O=${formatValue(candlestick?.open)}, H=${formatValue(candlestick?.high)}, L=${formatValue(candlestick?.low)}, C=${formatValue(candlestick?.close)}</p>
+            <span>${symbol}</span>
+            <p style="color: #26a69a;"> ■ O=${formatValue(candlestick?.open)}, H=${formatValue(candlestick?.high)}, L=${formatValue(candlestick?.low)}, C=${formatValue(candlestick?.close)}</p>
             <p style="color: white;">
               <span>■ SMA60: ${formatValue(sma60)}</span>
               <span style="color: #FFA500;">■ EMA15: ${formatValue(ema15)}</span>
             </p>
-            <p style="color: #26a69a;">■ Volume: ${formatValue(volume, 0)}</p>
+            <p>■ Volume: ${formatValue(volume, 0)}</p>
           </div>
         `;
       }
       if (pane1Legend) {
         pane1Legend.innerHTML = `
           <div style="display: flex; gap: 10px;">
+            <span>KDJ</span>
             <span style="color: #FF69B4;">■ J: ${formatValue(j)}</span>
             <span style="color: #00FF00;">■ K: ${formatValue(k)}</span>
             <span style="color: #FFFF00;">■ D: ${formatValue(d)}</span>
@@ -253,6 +252,7 @@ onMounted(async () => {
       if (pane2Legend) {
         pane2Legend.innerHTML = `
           <div style="display: flex; gap: 10px;">
+            <span>MACD</span>
             <span style="color: #0000FF;">■ MACD: ${formatValue(macdVal)}</span>
             <span style="color: #FFA500;">■ Signal: ${formatValue(signalVal)}</span>
             <span style="color: #26a69a;">■ Histogram: ${formatValue(histogramVal)}</span>
@@ -262,8 +262,9 @@ onMounted(async () => {
       if (pane3Legend) {
         pane3Legend.innerHTML = `
           <div style="display: flex; gap: 10px;">
-            <span style="color: #1E90FF;">■ StochRSI K: ${formatValue(rsiKVal)}</span>
-            <span style="color: red;">■ StochRSI D: ${formatValue(rsiDVal)}</span>
+            <span>StochRSI </span>
+            <span style="color: #1E90FF;">■ K: ${formatValue(rsiKVal)}</span>
+            <span style="color: red;">■ D: ${formatValue(rsiDVal)}</span>
           </div>
         `;
       }
