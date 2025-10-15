@@ -11,6 +11,8 @@ import {
   HistogramSeries,
   type CandlestickData,
   type UTCTimestamp,
+  CrosshairMode,
+  LineStyle,
 } from 'lightweight-charts';
 import { getStockData } from '@/DNSE_api/history';
 import type { StockSSIDataResponse } from '@/DNSE_api/type';
@@ -35,7 +37,6 @@ onMounted(async () => {
     leftPriceScale: { scaleMargins: { top: 0.3, bottom: 0.1 } },
     handleScroll: { mouseWheel: true, pressedMouseMove: true },
     handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
-    crosshair: { mode: 1 },
   });
 
   const candlestickSeries = chart.addSeries(CandlestickSeries, {
@@ -46,23 +47,40 @@ onMounted(async () => {
     wickDownColor: '#ef5350'
   });
 
+
+  const volumeSeries = chart.addSeries(HistogramSeries, {
+    color: '#26a69a',
+    priceFormat: {
+        type: 'volume',
+    },
+    priceScaleId: '',
+  });
+  volumeSeries.priceScale().applyOptions({
+      scaleMargins: {
+          top: 0.7, // highest point of the series will be 70% away from the top
+          bottom: 0,
+      },
+  });
+
+
+
   // MACD setup
-  const macdSeries = chart.addSeries(LineSeries, { color: '#0000FF', lineWidth: 1,  });
-  const signalSeries = chart.addSeries(LineSeries, { color: '#FFA500', lineWidth: 1,  });
+  const macdSeries = chart.addSeries(LineSeries, { color: '#0000FF', lineWidth: 1, priceLineVisible: false  });
+  const signalSeries = chart.addSeries(LineSeries, { color: '#FFA500', lineWidth: 1, priceLineVisible: false  });
   const histogramSeries = chart.addSeries(HistogramSeries, {
     priceFormat: { type: 'volume' },
   });
 
   // KDJ setup
-  const kSeries = chart.addSeries(LineSeries, { color: '#00FF00', lineWidth: 1,  });
-  const dSeries = chart.addSeries(LineSeries, { color: '#FFFF00', lineWidth: 1,  });
-  const jSeries = chart.addSeries(LineSeries, { color: '#FF69B4', lineWidth: 1,  });
+  const kSeries = chart.addSeries(LineSeries, { color: '#00FF00', lineWidth: 1, priceLineVisible: false });
+  const dSeries = chart.addSeries(LineSeries, { color: '#FFFF00', lineWidth: 1, priceLineVisible: false  });
+  const jSeries = chart.addSeries(LineSeries, { color: '#FF69B4', lineWidth: 1, priceLineVisible: false  });
 
-  const rsiSeriesK = chart.addSeries(LineSeries, { color: '#1E90FF', lineWidth: 1 });
-  const rsiSeriesD = chart.addSeries(LineSeries, { color: 'red', lineWidth: 1 });
+  const rsiSeriesK = chart.addSeries(LineSeries, { color: '#1E90FF', lineWidth: 1, priceLineVisible: false });
+  const rsiSeriesD = chart.addSeries(LineSeries, { color: 'red', lineWidth: 1, priceLineVisible: false });
 
-  const sma60Series = chart.addSeries(LineSeries, { color: 'white', lineWidth: 1 });
-  const ema15Series = chart.addSeries(LineSeries, { color: '#FFA500', lineWidth: 1 });
+  const sma60Series = chart.addSeries(LineSeries, { color: 'white', lineWidth: 1, priceLineVisible: false });
+  const ema15Series = chart.addSeries(LineSeries, { color: '#FFA500', lineWidth: 1, priceLineVisible: false });
 
   candlestickSeries.moveToPane(0);
   kSeries.moveToPane(1);
@@ -138,6 +156,11 @@ onMounted(async () => {
     sma60Series.setData(formatSeriesData(times, sma60Value))
     ema15Series.setData(formatSeriesData(times, ema15Value))
 
+    volumeSeries.setData(uniqueData.map(i => ({
+      time: i.t as UTCTimestamp,
+      value: i.v,
+      color: i.c >= i.o ? '#26a69a' : '#ef5350', // xanh nếu tăng, đỏ nếu giảm
+    })));
 
     // ====== CĂN CHART ======
     chart.timeScale().fitContent();
