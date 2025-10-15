@@ -152,7 +152,6 @@ export const setDataToChart = (symbol: string, chart: IChartApi, response: Stock
     const ema15Series = chart.addSeries(LineSeries, { color: '#FFA500', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
 
 
-
     candlestickSeries.moveToPane(0);
     volumeSeries.moveToPane(0);
 
@@ -333,3 +332,4 @@ export const setDataToChart = (symbol: string, chart: IChartApi, response: Stock
 
   chart.timeScale().fitContent();
 }
+
