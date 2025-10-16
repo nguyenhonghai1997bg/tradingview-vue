@@ -1,5 +1,5 @@
 <template>
-  <div id="chart-container" style="width: 100%; height: 100vh;"></div>
+  <div :id="idElement" style="width: 100%; height: 100vh;"></div>
 </template>
 
 <script lang="ts" setup>
@@ -7,27 +7,41 @@ import { onMounted } from 'vue';
 import { createChart } from 'lightweight-charts';
 import { getStockData } from '@/DNSE_api/history';
 import type { StockSSIDataResponse } from '@/DNSE_api/type';
-import { getConfigChart, setDataToChart, updateRealtimeCandle } from '@/helpers/chart'
 import mqtt from 'mqtt'
 import { configAccount } from '@/config/config_account';
 import { config } from '@/config';
+import { StockChart } from '@/helpers/stock_chart';
+
+const props = defineProps({
+  symbol: {
+    type: String,
+    default: 'VN30F1M'
+  },
+  resolution: {
+    type: String,
+    default: '1',
+  }
+});
+const idElement = 'chart-container-' + props.resolution
 
 onMounted(async () => {
-  const chartContainer = document.getElementById('chart-container') as HTMLDivElement;
+  const chartContainer = document.getElementById(idElement) as HTMLDivElement;
   if (!chartContainer) return console.error('Chart container not found');
 
-  const chartConfig = getConfigChart(chartContainer.clientWidth, chartContainer.clientHeight)
+  const symbol = props.symbol;
+
+  const stockChart = new StockChart(symbol)
+  const chartConfig = stockChart.getChartConfig(chartContainer.clientWidth, chartContainer.clientHeight)
   const chart = createChart(chartContainer, chartConfig);
 
   try {
-    const symbol = 'VN30F1M';
-    const resolution = '1';
+    const resolution = props.resolution;
     const endDate = new Date();
     const fromDate = new Date(endDate);
     fromDate.setDate(endDate.getDate() - 8);
 
     const response: StockSSIDataResponse = await getStockData(symbol, resolution, fromDate, endDate);
-    setDataToChart(symbol, chart, response)
+    stockChart.setData(idElement, chart, response)
 
 
     // ==============================
@@ -61,10 +75,14 @@ onMounted(async () => {
       console.log('🔁 Reconnecting...');
     });
 
+    const DNSE_TOPICS = [
+      `plaintext/quotes/krx/mdds/v2/ohlc/derivative/${resolution}/${symbol}`,
+      `plaintext/quotes/krx/mdds/tick/v1/roundlot/${symbol}`
+    ]
 
     client.on('connect', () => {
       console.log('✅ MQTT connected')
-      config.DNSE_TOPICS.forEach(topic => {
+      DNSE_TOPICS.forEach(topic => {
         client.subscribe(topic, { qos: 2 });
       });
     })
@@ -91,32 +109,15 @@ onMounted(async () => {
         const lastTime = response.data.t[lastIndex]
         if (!lastTime) return
 
-        // // Nếu cùng timestamp → update nến cuối
-        // if (parsed.time === lastTime) {
-        //   response.data.o[lastIndex] = open
-        //   response.data.h[lastIndex] = high
-        //   response.data.l[lastIndex] = low
-        //   response.data.c[lastIndex] = close
-        //   response.data.v[lastIndex] = volume
-        // } else if (parsed.time > lastTime) {
-        //   // Nếu nến mới → push thêm
-        //   response.data.t.push(parsed.time)
-        //   response.data.o.push(parsed.open)
-        //   response.data.h.push(parsed.high)
-        //   response.data.l.push(parsed.low)
-        //   response.data.c.push(parsed.close)
-        //   response.data.v.push(parsed.volume)
-        // } else return
-
         // Cập nhật chart & tính lại indicators
-        updateRealtimeCandle(
+        stockChart.updateRealtimeCandle(
+          idElement,
           parsed.time,
           parsed.open,
           parsed.high,
           parsed.low,
           parsed.close,
           parsed.volume,
-          symbol
         )
 
       } catch (err) {
