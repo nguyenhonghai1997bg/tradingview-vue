@@ -1,5 +1,5 @@
 <template>
-  <div :id="idElement" style="width: 100%; height: 100vh;"></div>
+  <div :id="idElement" style="width: 100%; height: 90vh"></div>
 </template>
 
 <script lang="ts" setup>
@@ -119,6 +119,10 @@ onMounted(async () => {
           parsed.close,
           parsed.volume,
         )
+
+        if (resolution == '1') {
+          document.title = `${symbol} - ${parsed.close.toFixed(2)}`;
+        }
 
       } catch (err) {
         console.error('Failed to load stock data:', err);
