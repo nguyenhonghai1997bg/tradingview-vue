@@ -102,23 +102,23 @@ export const generateSignals = (candlestickData: CandlestickData[]) => {
 
   // Tạo markers
   const markers = [
-    ...hnsIndices.map(i => ({
-      time: data[i]?.time,
+    ...hnsIndices.flatMap(i => ({
+      time: Number(data[i]?.time) || 0,
       position: "aboveBar",
       color: "#ef5350",
       shape: "arrowDown",
       text: "SHORT (H&S)",
-      price: Number(data[i]?.close) || 0
+      price: Number(data[i]?.close) || 0,
     })),
-    ...inverseHnsIndices.map(i => ({
-      time: data[i]?.time,
+    ...inverseHnsIndices.flatMap(i => ({
+      time: Number(data[i]?.time) || 0,
       position: "belowBar",
       color: "#26a69a",
       shape: "arrowUp",
       text: "LONG (Inv H&S)",
-      price: Number(data[i]?.close) || 0
+      price: Number(data[i]?.close) || 0,
     })),
-  ];
+  ].sort((a, b) => a.time - b.time);
 
   return markers;
 };

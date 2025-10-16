@@ -119,7 +119,7 @@ export class StockChart {
 
       const markers = generateSignals(candlestickData);
       if (this.candlestickSeries) {
-        createSeriesMarkers(this.candlestickSeries as unknown as any, markers as unknown as any)
+        createSeriesMarkers(this.candlestickSeries, markers)
       }
 
       const { macd, signal, histogram } = calculateMACD(close);
@@ -225,6 +225,9 @@ export class StockChart {
     setTimeout(() => {
       this.attachPaneLegends(idElement);
     }, 100);
+
+
+    
   }
 
   public updateRealtimeCandle(idElement: string, time: number, open: number, high: number, low: number, close: number, volume: number): void {
@@ -332,7 +335,7 @@ export class StockChart {
 
     const markers = generateSignals(candlestickData);
     if (this.candlestickSeries) {
-      createSeriesMarkers(this.candlestickSeries as unknown as any, markers as unknown as any)
+      createSeriesMarkers(this.candlestickSeries, markers)
     }
   }
 
