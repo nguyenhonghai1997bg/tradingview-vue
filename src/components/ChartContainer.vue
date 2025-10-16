@@ -36,6 +36,8 @@ onMounted(async () => {
     const resolution = String(props.resolution);
     const endDate = new Date();
     const fromDate = new Date(endDate);
+
+    // 1 phút thì chỉ cần lấy ít ngày hơn
     if (props.resolution == 1) {
       fromDate.setDate(endDate.getDate() - 8);
     } else {

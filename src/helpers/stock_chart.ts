@@ -140,15 +140,9 @@ export class StockChart {
     const pane2Legend = container.querySelectorAll("#pane-2-legend")[0];
     const pane3Legend = container.querySelectorAll("#pane-3-legend")[0];
 
-
-    // const pane0Legend = document.getElementById("pane-0-legend") as HTMLDivElement;
-    // const pane1Legend = document.getElementById("pane-1-legend") as HTMLDivElement;
-    // const pane2Legend = document.getElementById("pane-2-legend") as HTMLDivElement;
-    // const pane3Legend = document.getElementById("pane-3-legend") as HTMLDivElement;
-
     if (pane0Legend) {
       pane0Legend.innerHTML = `
-        <div>
+        <div class="value-data">
           <span>${this.symbol}</span><br>
           <span style="color: #26a69a;" class="px-0 mx-0"> ■ O=${this.formatValue(candlestick?.open)}, H=${this.formatValue(
         candlestick?.high
@@ -163,7 +157,7 @@ export class StockChart {
     }
     if (pane1Legend) {
       pane1Legend.innerHTML = `
-        <div style="display: flex; gap: 10px;">
+        <div style="display: flex; gap: 10px;" class="value-data">
           <span>KDJ</span>
           <span style="color: #FF69B4;">■ J: ${this.formatValue(j)}</span>
           <span style="color: #00FF00;">■ K: ${this.formatValue(k)}</span>
@@ -173,7 +167,7 @@ export class StockChart {
     }
     if (pane2Legend) {
       pane2Legend.innerHTML = `
-        <div style="display: flex; gap: 10px;">
+        <div style="display: flex; gap: 10px;" class="value-data">
           <span>MACD</span>
           <span style="color: #0000FF;">■ MACD: ${this.formatValue(macdVal)}</span>
           <span style="color: #FFA500;">■ Signal: ${this.formatValue(signalVal)}</span>
@@ -183,7 +177,7 @@ export class StockChart {
     }
     if (pane3Legend) {
       pane3Legend.innerHTML = `
-        <div style="display: flex; gap: 10px;">
+        <div style="display: flex; gap: 10px;" class="value-data">
           <span>StochRSI </span>
           <span style="color: #1E90FF;">■ K: ${this.formatValue(rsiKVal)}</span>
           <span style="color: red;">■ D: ${this.formatValue(rsiDVal)}</span>
@@ -260,7 +254,7 @@ export class StockChart {
       );
 
       const panes = chart.panes();
-      panes[0]?.setHeight(450);
+      panes[0]?.setHeight(400);
 
       const latestCandlestick = candlestickData[candlestickData.length - 1];
       const volumeData = this.volumeSeries?.data();
@@ -337,7 +331,6 @@ export class StockChart {
   }
 
   private initializeSeries(chart: IChartApi, symbol: string, resolution: string): void {
-    
     const firstPane = chart.panes()[0];
     if (firstPane) {
       createTextWatermark(firstPane, {
@@ -365,6 +358,7 @@ export class StockChart {
       color: "#26a69a",
       priceFormat: { type: "volume" },
       priceScaleId: "",
+      priceLineVisible: false,
     });
     this.volumeSeries.priceScale().applyOptions({
       scaleMargins: { top: 0.8, bottom: 0 },
@@ -384,6 +378,7 @@ export class StockChart {
     });
     this.histogramSeries = chart.addSeries(HistogramSeries, {
       priceFormat: { type: "volume" },
+      priceLineVisible: false,
     });
 
     this.kSeries = chart.addSeries(LineSeries, {
