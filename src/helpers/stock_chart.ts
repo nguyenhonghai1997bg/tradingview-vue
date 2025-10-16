@@ -52,6 +52,8 @@ export class StockChart {
       },
       grid: { vertLines: { color: "#222631" }, horzLines: { color: "#222631" } },
       timeScale: {
+        rightOffset: 30,
+        barSpacing: 8,
         timeVisible: true,
         secondsVisible: true,
         tickMarkFormatter: (timePoint: number) => {
@@ -216,7 +218,7 @@ export class StockChart {
         this.updateLegends(idElement, candlestick, volume, sma60, ema15, k, d, j, macdVal, signalVal, histogramVal, rsiKVal, rsiDVal);
       });
 
-      chart.timeScale().fitContent();
+      // chart.timeScale().fitContent();
     }, 100);
 
     setTimeout(() => {

@@ -54,7 +54,7 @@ onMounted(async () => {
       const { time, open, high, low, close, volume } = msg
       stockChart.updateRealtimeCandle(idElement, Number(time), Number(open), Number(high), Number(low), Number(close), Number(volume))
       if (resolution === '1') {
-        document.title = `${symbol} - ${Number(close).toFixed(2)}`
+        document.title = `${Number(close).toFixed(2)} - ${symbol}`
       }
     })
 

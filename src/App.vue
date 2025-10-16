@@ -1,7 +1,6 @@
 <template>
   <div style="max-width: 100%; overflow-x: hidden;">
     <div class="row mt-2">
-      <!-- Chart 1 phút -->
       <div class="col-md-6">
         <h6 class="text-center">{{ symbol }} ({{ resolutions[0] }} phút)</h6>
         <ChartContainer
@@ -9,11 +8,9 @@
           :resolution="resolutions[0]"
           :key="'chart1'"
           class="chart1"
-          @price-update="updatePrice"
         />
       </div>
 
-      <!-- Chart 5 phút -->
       <div class="col-md-6">
         <h6 class="text-center">{{ symbol }} ({{ resolutions[1] }} phút)</h6>
         <ChartContainer
@@ -21,7 +18,6 @@
           :resolution="resolutions[1]"
           :key="'chart5'"
           class="chart5"
-          @price-update="updatePrice"
         />
       </div>
     </div>
@@ -36,21 +32,6 @@ import { config } from '@/config/index.ts';
 
 const symbol = 'VN30F1M';
 const resolutions = [1, 5];
-const currentPrice = ref<number | null>(null);
-
-// Nhận giá mới từ ChartContainer
-const updatePrice = (price: number) => {
-  currentPrice.value = price;
-};
-
-// Cập nhật title trang khi giá thay đổi
-watch(currentPrice, (newPrice) => {
-  if (newPrice) {
-    document.title = `${symbol} - ${newPrice.toFixed(2)}`;
-  } else {
-    document.title = symbol;
-  }
-});
 
 // Auto login 1 lần/ngày
 const login = async () => {
