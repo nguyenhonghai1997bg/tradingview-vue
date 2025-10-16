@@ -94,3 +94,50 @@ body {
 .value-data {
   font-size: 12px;
 }
+
+/* CSS cho layout */
+.resizable-container {
+  display: flex;
+  height: 98vh; 
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  
+  .chart-pane {
+    flex-grow: 0;
+    flex-shrink: 0;
+    height: 100%;
+    overflow: hidden; 
+    /* Chuyển sang flex để căn chỉnh title và ChartContainer */
+    display: flex; 
+    flex-direction: column;
+  }
+
+  /* Container bọc ChartContainer để kiểm soát chiều cao */
+  .chart-wrapper {
+    flex-grow: 1; /* Chiếm hết phần còn lại của chart-pane */
+    min-height: 0; /* Cho phép flex item thu nhỏ */
+  }
+
+  /* Các trạng thái Full Screen */
+  .full-screen {
+    flex-basis: 100%; /* Đảm bảo chiếm 100% khi width là 100% */
+    /* Loại bỏ transition tạm thời cho width nếu có, để Full/Thu nhỏ nhanh */
+  }
+
+  .hidden-pane {
+    display: none !important; /* Ẩn hoàn toàn biểu đồ không được chọn */
+    width: 0 !important;
+  }
+
+  .splitter {
+    width: 8px; 
+    cursor: col-resize;
+    background-color: #333;
+    border-left: 1px solid #555;
+    border-right: 1px solid #555;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+}
+
