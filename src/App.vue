@@ -35,7 +35,7 @@ import DNSEClient from '@/DNSE_api/index';
 import { config } from '@/config/index.ts';
 
 const symbol = 'VN30F1M';
-const resolutions = ['1', '5'];
+const resolutions = [1, 5];
 const currentPrice = ref<number | null>(null);
 
 // Nhận giá mới từ ChartContainer

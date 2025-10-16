@@ -4,12 +4,9 @@
 
 <script lang="ts" setup>
 import { onMounted } from 'vue';
-import { createChart, createTextWatermark } from 'lightweight-charts';
+import { createChart } from 'lightweight-charts';
 import { getStockData } from '@/DNSE_api/history';
 import type { StockSSIDataResponse } from '@/DNSE_api/type';
-import mqtt from 'mqtt'
-import { configAccount } from '@/config/config_account';
-import { config } from '@/config';
 import { StockChart } from '@/helpers/stock_chart';
 import { DNSESocket } from '@/DNSE_api/socket';
 
@@ -19,8 +16,8 @@ const props = defineProps({
     default: 'VN30F1M'
   },
   resolution: {
-    type: String,
-    default: '1',
+    type: Number,
+    default: 1,
   }
 });
 const idElement = 'chart-container-' + props.resolution
@@ -36,10 +33,14 @@ onMounted(async () => {
   const chart = createChart(chartContainer, chartConfig);
 
   try {
-    const resolution = props.resolution;
+    const resolution = String(props.resolution);
     const endDate = new Date();
     const fromDate = new Date(endDate);
-    fromDate.setDate(endDate.getDate() - 8);
+    if (props.resolution == 1) {
+      fromDate.setDate(endDate.getDate() - 8);
+    } else {
+      fromDate.setDate(endDate.getDate() - 30);
+    }
 
     const response: StockSSIDataResponse = await getStockData(symbol, resolution, fromDate, endDate);
     stockChart.setData(idElement, chart, response, symbol, resolution)
