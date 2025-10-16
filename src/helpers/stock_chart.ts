@@ -2,6 +2,7 @@ import type { StockSSIDataResponse } from "@/DNSE_api/type";
 import {
   CandlestickSeries,
   createSeriesMarkers,
+  createTextWatermark,
   HistogramSeries,
   LineSeries,
   type CandlestickData,
@@ -191,8 +192,14 @@ export class StockChart {
     }
   }
 
-  public setData(idElement: string, chart: IChartApi, response: StockSSIDataResponse): void {
-    this.initializeSeries(chart);
+  public setData(
+    idElement: string,
+    chart: IChartApi,
+    response: StockSSIDataResponse,
+    symbol: string,
+    resolution: string
+  ): void {
+    this.initializeSeries(chart, symbol, resolution);
 
     setTimeout(() => {
       const seenTimes = new Set<number>();
@@ -329,7 +336,23 @@ export class StockChart {
     }, 100);
   }
 
-  private initializeSeries(chart: IChartApi): void {
+  private initializeSeries(chart: IChartApi, symbol: string, resolution: string): void {
+    
+    const firstPane = chart.panes()[0];
+    if (firstPane) {
+      createTextWatermark(firstPane, {
+          horzAlign: 'right',
+          vertAlign: 'top',
+          lines: [
+              {
+                  text: `${symbol} - ${resolution}p`,
+                  color: 'white',
+                  fontSize: 24,
+              },
+          ],
+      });
+    }
+
     this.candlestickSeries = chart.addSeries(CandlestickSeries, {
       upColor: "#26a69a",
       downColor: "#ef5350",
