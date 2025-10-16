@@ -1,5 +1,5 @@
 <template>
-  <div :id="idElement" style="width: 100%; height: 90vh"></div>
+  <div :id="idElement" style="width: 100%; height: 92vh;"></div>
 </template>
 
 <script lang="ts" setup>
@@ -48,7 +48,7 @@ onMounted(async () => {
     stockChart.setData(idElement, chart, response, symbol, resolution)
 
     // ==============================
-    // 🔌 WebSocket DNSE realtime
+    // WebSocket DNSE realtime
     // ==============================
     const socket = new DNSESocket(symbol, resolution, (msg) => {
       const { time, open, high, low, close, volume } = msg

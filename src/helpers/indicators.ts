@@ -20,8 +20,8 @@ function findSwingPoints(data: Candle[], window: number = 3) {
     const max = Math.max(...slice.map(c => c.high));
     const min = Math.min(...slice.map(c => c.low));
 
-    if (data[i].high === max) highs.push({ index: i, price: max });
-    if (data[i].low === min) lows.push({ index: i, price: min });
+    if (data[i]?.high === max) highs.push({ index: i, price: max });
+    if (data[i]?.low === min) lows.push({ index: i, price: min });
   }
 
   return { highs, lows };
@@ -40,6 +40,7 @@ function detectHeadAndShoulders(highs: { index: number; price: number }[]): numb
     const right = highs[i];
 
     if (
+      head && right && left &&
       head.price > left.price &&
       head.price > right.price &&
       Math.abs(left.price - right.price) / head.price < 0.03 && // Vai cân đối
@@ -65,6 +66,7 @@ function detectInverseHeadAndShoulders(lows: { index: number; price: number }[])
     const right = lows[i];
 
     if (
+      head && right && left &&
       head.price < left.price &&
       head.price < right.price &&
       Math.abs(left.price - right.price) / head.price < 0.03 &&
@@ -101,18 +103,20 @@ export const generateSignals = (candlestickData: CandlestickData[]) => {
   // Tạo markers
   const markers = [
     ...hnsIndices.map(i => ({
-      time: data[i].time,
+      time: data[i]?.time,
       position: "aboveBar",
       color: "#ef5350",
       shape: "arrowDown",
       text: "SHORT (H&S)",
+      price: Number(data[i]?.close) || 0
     })),
     ...inverseHnsIndices.map(i => ({
-      time: data[i].time,
+      time: data[i]?.time,
       position: "belowBar",
       color: "#26a69a",
       shape: "arrowUp",
       text: "LONG (Inv H&S)",
+      price: Number(data[i]?.close) || 0
     })),
   ];
 
