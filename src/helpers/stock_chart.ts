@@ -25,18 +25,18 @@ import {
 export class StockChart {
   private symbol: string;
   private resolution: number;
-  private candlestickSeries: ISeriesApi<"Candlestick">;
-  private volumeSeries: ISeriesApi<"Histogram">;
-  private macdSeries: ISeriesApi<"Line">;
-  private signalSeries: ISeriesApi<"Line">;
-  private histogramSeries: ISeriesApi<"Histogram">;
-  private kSeries: ISeriesApi<"Line">;
-  private dSeries: ISeriesApi<"Line">;
-  private jSeries: ISeriesApi<"Line">;
-  private rsiSeriesK: ISeriesApi<"Line">;
-  private rsiSeriesD: ISeriesApi<"Line">;
-  private sma60Series: ISeriesApi<"Line">;
-  private ema15Series: ISeriesApi<"Line">;
+  private candlestickSeries!: ISeriesApi<"Candlestick">;
+  private volumeSeries!: ISeriesApi<"Histogram">;
+  private macdSeries!: ISeriesApi<"Line">;
+  private signalSeries!: ISeriesApi<"Line">;
+  private histogramSeries!: ISeriesApi<"Histogram">;
+  private kSeries!: ISeriesApi<"Line">;
+  private dSeries!: ISeriesApi<"Line">;
+  private jSeries!: ISeriesApi<"Line">;
+  private rsiSeriesK!: ISeriesApi<"Line">;
+  private rsiSeriesD!: ISeriesApi<"Line">;
+  private sma60Series!: ISeriesApi<"Line">;
+  private ema15Series!: ISeriesApi<"Line">;
 
   constructor(symbol: string, resolution: number) {
     this.symbol = symbol;
@@ -119,7 +119,7 @@ export class StockChart {
 
       const markers = generateSignals(candlestickData);
       if (this.candlestickSeries) {
-        createSeriesMarkers(this.candlestickSeries, markers)
+        createSeriesMarkers(this.candlestickSeries as unknown as any, markers as unknown as any)
       }
 
       const { macd, signal, histogram } = calculateMACD(close);
@@ -154,7 +154,8 @@ export class StockChart {
 
       const latestCandlestick = candlestickData[candlestickData.length - 1];
       const volumeData = this.volumeSeries?.data();
-      const latestVolume = volumeData?.length ? volumeData[volumeData.length - 1]?.value : undefined;
+      const lastVolumeEntry = volumeData?.length ? volumeData[volumeData.length - 1] : undefined;
+      const latestVolume = lastVolumeEntry && "value" in (lastVolumeEntry as any) ? (lastVolumeEntry as any).value : undefined;
       const latestSma60 = sma60Value.length ? sma60Value[sma60Value.length - 1] : undefined;
       const latestEma15 = ema15Value.length ? ema15Value[ema15Value.length - 1] : undefined;
       const latestK = k.length ? k[k.length - 1] : undefined;
@@ -203,17 +204,17 @@ export class StockChart {
         }
 
         const candlestick = param.seriesData.get(this.candlestickSeries!) as CandlestickData;
-        const volume = param.seriesData.get(this.volumeSeries!)?.value;
-        const sma60 = param.seriesData.get(this.sma60Series!)?.value;
-        const ema15 = param.seriesData.get(this.ema15Series!)?.value;
-        const k = param.seriesData.get(this.kSeries!)?.value;
-        const d = param.seriesData.get(this.dSeries!)?.value;
-        const j = param.seriesData.get(this.jSeries!)?.value;
-        const macdVal = param.seriesData.get(this.macdSeries!)?.value;
-        const signalVal = param.seriesData.get(this.signalSeries!)?.value;
-        const histogramVal = param.seriesData.get(this.histogramSeries!)?.value;
-        const rsiKVal = param.seriesData.get(this.rsiSeriesK!)?.value;
-        const rsiDVal = param.seriesData.get(this.rsiSeriesD!)?.value;
+        const volume = (param.seriesData.get(this.volumeSeries!) as { value?: number })?.value;
+        const sma60 = (param.seriesData.get(this.sma60Series!) as { value?: number })?.value;
+        const ema15 = (param.seriesData.get(this.ema15Series!) as { value?: number })?.value;
+        const k = (param.seriesData.get(this.kSeries!) as { value?: number })?.value;
+        const d = (param.seriesData.get(this.dSeries!) as { value?: number })?.value;
+        const j = (param.seriesData.get(this.jSeries!) as { value?: number })?.value;
+        const macdVal = (param.seriesData.get(this.macdSeries!) as { value?: number })?.value;
+        const signalVal = (param.seriesData.get(this.signalSeries!) as { value?: number })?.value;
+        const histogramVal = (param.seriesData.get(this.histogramSeries!) as { value?: number })?.value;
+        const rsiKVal = (param.seriesData.get(this.rsiSeriesK!) as { value?: number })?.value;
+        const rsiDVal = (param.seriesData.get(this.rsiSeriesD!) as { value?: number })?.value;
 
         this.updateLegends(idElement, candlestick, volume, sma60, ema15, k, d, j, macdVal, signalVal, histogramVal, rsiKVal, rsiDVal);
       });
@@ -298,10 +299,10 @@ export class StockChart {
     this.rsiSeriesD.setData(formatSeriesData(times, rsiD));
     this.sma60Series.setData(formatSeriesData(times, sma60Value));
     this.ema15Series.setData(formatSeriesData(times, ema15Value));
-
     const latestCandlestick = candlestickData[candlestickData.length - 1];
     const volumeData = this.volumeSeries.data();
-    const latestVolume = volumeData.length ? volumeData[volumeData.length - 1]?.value : undefined;
+    const lastVolumeEntry = volumeData.length ? volumeData[volumeData.length - 1] : undefined;
+    const latestVolume = lastVolumeEntry && "value" in (lastVolumeEntry as any) ? (lastVolumeEntry as any).value : undefined;
     const latestSma60 = sma60Value.length ? sma60Value[sma60Value.length - 1] : undefined;
     const latestEma15 = ema15Value.length ? ema15Value[ema15Value.length - 1] : undefined;
     const latestK = k.length ? k[k.length - 1] : undefined;
@@ -331,7 +332,7 @@ export class StockChart {
 
     const markers = generateSignals(candlestickData);
     if (this.candlestickSeries) {
-      createSeriesMarkers(this.candlestickSeries, markers)
+      createSeriesMarkers(this.candlestickSeries as unknown as any, markers as unknown as any)
     }
   }
 
