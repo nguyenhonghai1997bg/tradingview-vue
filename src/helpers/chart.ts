@@ -18,6 +18,61 @@ let rsiSeriesD: ISeriesApi<"Line">;
 let sma60Series: ISeriesApi<"Line">;
 let ema15Series: ISeriesApi<"Line">;
 
+export const getConfigChart = (width: number, height: number) => {
+  return {
+    width: width,
+    height: height,
+    layout: {
+      background: { color: '#171B26' },
+      textColor: '#FFFFFF',
+      panes: { enableResize: true, separatorHoverColor: 'rgba(255, 0, 0, 0.1)' },
+    },
+    grid: { vertLines: { color: '#222631' }, horzLines: { color: '#222631' } },
+    timeScale: {
+      timeVisible: true,
+      secondsVisible: true,
+      tickMarkFormatter: (timePoint: number, tickMarkType: string, locale: string) => {
+        const date = new Date(timePoint * 1000);
+        if (date.getHours() === 9 && date.getMinutes() === 0) {
+          return date.toLocaleString('vi-VN', {
+            day: '2-digit',
+          });
+        }
+
+        return date.toLocaleString('vi-VN', {
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+      },
+    },
+    rightPriceScale: { scaleMargins: { top: 0.3, bottom: 0.1 } },
+    leftPriceScale: { scaleMargins: { top: 0.3, bottom: 0.1 } },
+    handleScroll: { mouseWheel: true, pressedMouseMove: true },
+    handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
+    crosshair: { mode: 0 },
+    localization: {
+      timeFormatter: (businessDayOrTimestamp: number) => {
+        const date = new Date(businessDayOrTimestamp * 1000);
+        const timePart = date.toLocaleString('vi-VN', {
+          hour12: false,
+          hour: '2-digit',
+          minute: '2-digit',
+        });
+
+        // Format date (DD/MM)
+        const datePart = date.toLocaleString('vi-VN', {
+          day: '2-digit',
+          month: '2-digit',
+        });
+
+        // Combine time and date with a space
+        return `${timePart}   ${datePart}`;
+      },
+    }
+  }
+} 
+
 export const attachPaneLegends = () => {
   const container = document.querySelector('.tv-lightweight-charts');
   if (!container) return;

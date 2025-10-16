@@ -7,7 +7,7 @@ import { onMounted } from 'vue';
 import { createChart } from 'lightweight-charts';
 import { getStockData } from '@/DNSE_api/history';
 import type { StockSSIDataResponse } from '@/DNSE_api/type';
-import { setDataToChart, updateRealtimeCandle } from '@/helpers/chart'
+import { getConfigChart, setDataToChart, updateRealtimeCandle } from '@/helpers/chart'
 import mqtt from 'mqtt'
 import { configAccount } from '@/config/config_account';
 import { config } from '@/config';
@@ -16,59 +16,8 @@ onMounted(async () => {
   const chartContainer = document.getElementById('chart-container') as HTMLDivElement;
   if (!chartContainer) return console.error('Chart container not found');
 
-  const chart = createChart(chartContainer, {
-    width: chartContainer.clientWidth,
-    height: chartContainer.clientHeight,
-    layout: {
-      background: { color: '#171B26' },
-      textColor: '#FFFFFF',
-      panes: { enableResize: true, separatorHoverColor: 'rgba(255, 0, 0, 0.1)' },
-    },
-    grid: { vertLines: { color: '#222631' }, horzLines: { color: '#222631' } },
-    timeScale: {
-      timeVisible: true,
-      secondsVisible: true,
-      tickMarkFormatter: (timePoint: number, tickMarkType: string, locale: string) => {
-        const date = new Date(timePoint * 1000);
-        if (date.getHours() === 9 && date.getMinutes() === 0) {
-          return date.toLocaleString('vi-VN', {
-            day: '2-digit',
-          });
-        }
-
-        return date.toLocaleString('vi-VN', {
-          hour12: false,
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-      },
-    },
-    rightPriceScale: { scaleMargins: { top: 0.3, bottom: 0.1 } },
-    leftPriceScale: { scaleMargins: { top: 0.3, bottom: 0.1 } },
-    handleScroll: { mouseWheel: true, pressedMouseMove: true },
-    handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
-    crosshair: { mode: 0 },
-    localization: {
-      timeFormatter: (businessDayOrTimestamp: number) => {
-        const date = new Date(businessDayOrTimestamp * 1000);
-        const timePart = date.toLocaleString('vi-VN', {
-          hour12: false,
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-
-        // Format date (DD/MM)
-        const datePart = date.toLocaleString('vi-VN', {
-          day: '2-digit',
-          month: '2-digit',
-        });
-
-        // Combine time and date with a space
-        return `${timePart}   ${datePart}`;
-      },
-    }
-
-  });
+  const chartConfig = getConfigChart(chartContainer.clientWidth, chartContainer.clientHeight)
+  const chart = createChart(chartContainer, chartConfig);
 
   try {
     const symbol = 'VN30F1M';
