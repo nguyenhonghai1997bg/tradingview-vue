@@ -5,5 +5,10 @@ export const config = {
   dnse_symbol: 'VN30F1M',
   TOKEN_KEY: 'DNSE_TOKEN',
   TRADING_TOKEN_KEY: 'DNSE_TRADING_TOKEN',
-  IS_SSI: true
+  IS_SSI: true,
+  DNSE_TOPICS: [
+    "plaintext/quotes/krx/mdds/v2/ohlc/derivative/1/VN30F1M",
+    "plaintext/quotes/krx/mdds/tick/v1/roundlot/VN30F1M"
+  ],
+
 }

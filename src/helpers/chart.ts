@@ -1,8 +1,22 @@
 import type { StockSSIDataResponse } from "@/DNSE_api/type";
-import { CandlestickSeries, createSeriesMarkers, HistogramSeries, LineSeries, type CandlestickData, type IChartApi, type UTCTimestamp } from "lightweight-charts";
+import { CandlestickSeries, createSeriesMarkers, HistogramSeries, LineSeries, type CandlestickData, type IChartApi, type ISeriesApi, type SeriesDefinition, type UTCTimestamp } from "lightweight-charts";
 import { generateSignals } from "@/helpers/indicators";
 import { formatHistogramData, formatSeriesData } from "./data";
 import { calculateEMA, calculateKDJ, calculateMACD, calculateRSI, calculateSMA, calculateStochRSI, calculateStochRSI_KD } from "@/helpers/tradingview_indicator";
+
+// Global series variables with proper types
+let candlestickSeries: ISeriesApi<"Candlestick">;
+let volumeSeries: ISeriesApi<"Histogram">;
+let macdSeries: ISeriesApi<"Line">;
+let signalSeries: ISeriesApi<"Line">;
+let histogramSeries: ISeriesApi<"Histogram">;
+let kSeries: ISeriesApi<"Line">;
+let dSeries: ISeriesApi<"Line">;
+let jSeries: ISeriesApi<"Line">;
+let rsiSeriesK: ISeriesApi<"Line">;
+let rsiSeriesD: ISeriesApi<"Line">;
+let sma60Series: ISeriesApi<"Line">;
+let ema15Series: ISeriesApi<"Line">;
 
 export const attachPaneLegends = () => {
   const container = document.querySelector('.tv-lightweight-charts');
@@ -113,7 +127,7 @@ const formatValue = (value: number | undefined | null, decimals: number = 2): st
 
 
 export const setDataToChart = (symbol: string, chart: IChartApi, response: StockSSIDataResponse) => {
-  const candlestickSeries = chart.addSeries(CandlestickSeries, {
+  candlestickSeries = chart.addSeries(CandlestickSeries, {
       upColor: '#26a69a',
       downColor: '#ef5350',
       borderVisible: false,
@@ -121,7 +135,7 @@ export const setDataToChart = (symbol: string, chart: IChartApi, response: Stock
       wickDownColor: '#ef5350'
     });
 
-    const volumeSeries = chart.addSeries(HistogramSeries, {
+    volumeSeries = chart.addSeries(HistogramSeries, {
       color: '#26a69a',
       priceFormat: { type: 'volume' },
       priceScaleId: '',
@@ -130,26 +144,26 @@ export const setDataToChart = (symbol: string, chart: IChartApi, response: Stock
       scaleMargins: { top: 0.8, bottom: 0 },
     });
 
-    const macdSeries = chart.addSeries(LineSeries, {
+    macdSeries = chart.addSeries(LineSeries, {
       color: '#0000FF',
       lineWidth: 1,
       priceLineVisible: false,
       crosshairMarkerVisible: false, 
     });
-    const signalSeries = chart.addSeries(LineSeries, { color: '#FFA500', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
-    const histogramSeries = chart.addSeries(HistogramSeries, {
+    signalSeries = chart.addSeries(LineSeries, { color: '#FFA500', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
+    histogramSeries = chart.addSeries(HistogramSeries, {
       priceFormat: { type: 'volume' },
     });
 
-    const kSeries = chart.addSeries(LineSeries, { color: '#00FF00', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
-    const dSeries = chart.addSeries(LineSeries, { color: '#FFFF00', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
-    const jSeries = chart.addSeries(LineSeries, { color: '#FF69B4', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
+    kSeries = chart.addSeries(LineSeries, { color: '#00FF00', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
+    dSeries = chart.addSeries(LineSeries, { color: '#FFFF00', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
+    jSeries = chart.addSeries(LineSeries, { color: '#FF69B4', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
 
-    const rsiSeriesK = chart.addSeries(LineSeries, { color: '#1E90FF', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
-    const rsiSeriesD = chart.addSeries(LineSeries, { color: 'red', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
+    rsiSeriesK = chart.addSeries(LineSeries, { color: '#1E90FF', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
+    rsiSeriesD = chart.addSeries(LineSeries, { color: 'red', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
 
-    const sma60Series = chart.addSeries(LineSeries, { color: 'white', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
-    const ema15Series = chart.addSeries(LineSeries, { color: '#FFA500', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
+    sma60Series = chart.addSeries(LineSeries, { color: 'white', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
+    ema15Series = chart.addSeries(LineSeries, { color: '#FFA500', lineWidth: 1, priceLineVisible: false, crosshairMarkerVisible: false });
 
 
     candlestickSeries.moveToPane(0);
@@ -177,6 +191,7 @@ export const setDataToChart = (symbol: string, chart: IChartApi, response: Stock
         c: response.data.c[i] || 0,
         v: response.data.v[i] || 0,
       })).filter(item => !seenTimes.has(item.t) && seenTimes.add(item.t));
+
       uniqueData.sort((a, b) => a.t - b.t);
 
       const candlestickData: CandlestickData[] = uniqueData.map(i => ({
@@ -333,3 +348,119 @@ export const setDataToChart = (symbol: string, chart: IChartApi, response: Stock
   chart.timeScale().fitContent();
 }
 
+export const updateRealtimeCandle = (
+  time: number,
+  open: number,
+  high: number,
+  low: number,
+  close: number,
+  volume: number,
+  symbol: string,
+) => {
+  if (!candlestickSeries || !volumeSeries) {
+    console.error("Candlestick or Volume series not initialized.");
+    return;
+  }
+
+  const newCandleData: CandlestickData<UTCTimestamp> = {
+    time: time as UTCTimestamp,
+    open,
+    high,
+    low,
+    close,
+  };
+  candlestickSeries.update(newCandleData);
+
+  // Update volume
+  volumeSeries.update({
+    time: time as UTCTimestamp,
+    value: volume,
+    color: close >= open ? '#26a69a' : '#ef5350',
+  });
+
+  // Update indicators with the new data
+  updateIndicators(symbol);
+};
+
+const updateIndicators = (symbol: string) => {
+  if (
+    !candlestickSeries ||
+    !macdSeries ||
+    !signalSeries ||
+    !histogramSeries ||
+    !kSeries ||
+    !dSeries ||
+    !jSeries ||
+    !rsiSeriesK ||
+    !rsiSeriesD ||
+    !sma60Series ||
+    !ema15Series ||
+    !volumeSeries
+  ) {
+    console.error("Series not initialized. Cannot update indicators.");
+    return;
+  }
+
+  const candlestickData = candlestickSeries.data() as CandlestickData<UTCTimestamp>[];
+  if (!candlestickData.length) {
+    console.warn("No candlestick data available to calculate indicators.");
+    return;
+  }
+
+  const closeValues = candlestickData.map((d) => d.close);
+  const highValues = candlestickData.map((d) => d.high);
+  const lowValues = candlestickData.map((d) => d.low);
+  const times = candlestickData.map((d) => d.time);
+
+  // Calculate indicators
+  const { macd, signal, histogram } = calculateMACD(closeValues);
+  const { k, d, j } = calculateKDJ(highValues, lowValues, closeValues);
+  const rsi = calculateRSI(closeValues, 14);
+  const stochRSI = calculateStochRSI(rsi, 14);
+  const { rsiK, rsiD } = calculateStochRSI_KD(stochRSI, 3, 3);
+  const sma60Value = calculateSMA(closeValues, 60);
+  const ema15Value = calculateEMA(closeValues, 15);
+
+  // Format and update series data
+  macdSeries.setData(formatSeriesData(times, macd));
+  signalSeries.setData(formatSeriesData(times, signal));
+  histogramSeries.setData(formatHistogramData(times, histogram));
+  kSeries.setData(formatSeriesData(times, k));
+  dSeries.setData(formatSeriesData(times, d));
+  jSeries.setData(formatSeriesData(times, j));
+  rsiSeriesK.setData(formatSeriesData(times, rsiK));
+  rsiSeriesD.setData(formatSeriesData(times, rsiD));
+  sma60Series.setData(formatSeriesData(times, sma60Value));
+  ema15Series.setData(formatSeriesData(times, ema15Value));
+
+  // Update legends with the latest values
+  const latestCandlestick = candlestickData[candlestickData.length - 1];
+  const volumeData = volumeSeries.data();
+  const latestVolume = volumeData.length ? volumeData[volumeData.length - 1]?.value : undefined;
+  const latestSma60 = sma60Value.length ? sma60Value[sma60Value.length - 1] : undefined;
+  const latestEma15 = ema15Value.length ? ema15Value[ema15Value.length - 1] : undefined;
+  const latestK = k.length ? k[k.length - 1] : undefined;
+  const latestD = d.length ? d[d.length - 1] : undefined;
+  const latestJ = j.length ? j[j.length - 1] : undefined;
+  const latestMacd = macd.length ? macd[macd.length - 1] : undefined;
+  const latestSignal = signal.length ? signal[signal.length - 1] : undefined;
+  const latestHistogram = histogram.length ? histogram[histogram.length - 1] : undefined;
+  const latestRsiK = rsiK.length ? rsiK[rsiK.length - 1] : undefined;
+  const latestRsiD = rsiD.length ? rsiD[rsiD.length - 1] : undefined;
+
+  updateLegends(
+    symbol,
+    latestCandlestick,
+    latestVolume,
+    latestSma60,
+    latestEma15,
+    latestK,
+    latestD,
+    latestJ,
+    latestMacd,
+    latestSignal,
+    latestHistogram,
+    latestRsiK,
+    latestRsiD
+  );
+};

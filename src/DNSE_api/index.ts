@@ -3,7 +3,7 @@ import { configAccount } from '../config/config_account';
 import { config } from '../config/index.ts';
 import type { DerivativeOrderData, DerivativeOrderResponse, LoanPackage, LoginResponse, TradingTokenResponse } from './type.ts';
 
-export class DNSEClient {
+export default class DNSEClient {
   private username: string;
   private password: string;
   private useSmartOtp: boolean;
