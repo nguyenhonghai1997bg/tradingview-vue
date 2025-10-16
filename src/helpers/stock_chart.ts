@@ -53,7 +53,7 @@ export class StockChart {
       grid: { vertLines: { color: "#222631" }, horzLines: { color: "#222631" } },
       timeScale: {
         rightOffset: 20,
-        barSpacing: 8,
+        barSpacing: 3,
         timeVisible: true,
         secondsVisible: true,
         tickMarkFormatter: (timePoint: number) => {
