@@ -85,6 +85,11 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.chart1, .chart5 {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 4px;
+}
 
 .value-data {
   font-size: 12px;

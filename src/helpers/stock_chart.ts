@@ -11,7 +11,7 @@ import {
   type UTCTimestamp,
 } from "lightweight-charts";
 import { generateSignals } from "@/helpers/indicators";
-import { formatHistogramData, formatSeriesData } from "./data";
+import { formatHistogramData, formatSeriesData } from "@/helpers/data";
 import {
   calculateEMA,
   calculateKDJ,
@@ -334,15 +334,15 @@ export class StockChart {
     const firstPane = chart.panes()[0];
     if (firstPane) {
       createTextWatermark(firstPane, {
-          horzAlign: 'right',
-          vertAlign: 'top',
-          lines: [
-              {
-                  text: `${symbol} - ${resolution}p`,
-                  color: 'white',
-                  fontSize: 24,
-              },
-          ],
+        horzAlign: 'right',
+        vertAlign: 'top',
+        lines: [
+          {
+            text: `${symbol} - ${resolution}p`,
+            color: 'white',
+            fontSize: 24,
+          },
+        ],
       });
     }
 
@@ -540,5 +540,10 @@ export class StockChart {
       latestRsiK,
       latestRsiD
     );
+
+    const markers = generateSignals(candlestickData);
+    if (this.candlestickSeries) {
+      createSeriesMarkers(this.candlestickSeries, markers)
+    }
   }
 }

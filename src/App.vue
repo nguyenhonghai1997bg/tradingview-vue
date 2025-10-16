@@ -71,11 +71,3 @@ const login = async () => {
 
 login();
 </script>
-
-<style scoped>
-.chart1, .chart5 {
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 4px;
-}
-</style>
