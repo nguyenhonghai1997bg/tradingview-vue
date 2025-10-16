@@ -25,7 +25,6 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
 import ChartContainer from '@/components/ChartContainer.vue';
 import DNSEClient from '@/DNSE_api/index';
 import { config } from '@/config/index.ts';

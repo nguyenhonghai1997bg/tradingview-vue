@@ -24,6 +24,7 @@ import {
 
 export class StockChart {
   private symbol: string;
+  private resolution: number;
   private candlestickSeries: ISeriesApi<"Candlestick">;
   private volumeSeries: ISeriesApi<"Histogram">;
   private macdSeries: ISeriesApi<"Line">;
@@ -37,8 +38,9 @@ export class StockChart {
   private sma60Series: ISeriesApi<"Line">;
   private ema15Series: ISeriesApi<"Line">;
 
-  constructor(symbol: string) {
+  constructor(symbol: string, resolution: number) {
     this.symbol = symbol;
+    this.resolution = resolution;
   }
 
   public getChartConfig(width: number, height: number) {
@@ -84,10 +86,8 @@ export class StockChart {
     idElement: string,
     chart: IChartApi,
     response: StockSSIDataResponse,
-    symbol: string,
-    resolution: string
   ): void {
-    this.initializeSeries(chart, symbol, resolution);
+    this.initializeSeries(chart);
 
     setTimeout(() => {
       const seenTimes = new Set<number>();
@@ -335,7 +335,7 @@ export class StockChart {
     }
   }
 
-  private initializeSeries(chart: IChartApi, symbol: string, resolution: string): void {
+  private initializeSeries(chart: IChartApi): void {
     const firstPane = chart.panes()[0];
     if (firstPane) {
       createTextWatermark(firstPane, {
@@ -343,7 +343,7 @@ export class StockChart {
         vertAlign: 'top',
         lines: [
           {
-            text: `${symbol} - ${resolution}p`,
+            text: `${this.symbol} - ${this.resolution}p`,
             color: 'white',
             fontSize: 24,
           },

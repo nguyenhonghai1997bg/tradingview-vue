@@ -28,7 +28,7 @@ onMounted(async () => {
 
   const symbol = props.symbol;
 
-  const stockChart = new StockChart(symbol)
+  const stockChart = new StockChart(symbol, props.resolution)
   const chartConfig = stockChart.getChartConfig(chartContainer.clientWidth, chartContainer.clientHeight)
   const chart = createChart(chartContainer, chartConfig);
 
@@ -38,14 +38,14 @@ onMounted(async () => {
     const fromDate = new Date(endDate);
 
     // 1 phút thì chỉ cần lấy ít ngày hơn
-    if (props.resolution == 1) {
+    if (props.resolution === 1) {
       fromDate.setDate(endDate.getDate() - 8);
     } else {
       fromDate.setDate(endDate.getDate() - 30);
     }
 
     const response: StockSSIDataResponse = await getStockData(symbol, resolution, fromDate, endDate);
-    stockChart.setData(idElement, chart, response, symbol, resolution)
+    stockChart.setData(idElement, chart, response)
 
     // ==============================
     // WebSocket DNSE realtime
@@ -53,7 +53,7 @@ onMounted(async () => {
     const socket = new DNSESocket(symbol, resolution, (msg) => {
       const { time, open, high, low, close, volume } = msg
       stockChart.updateRealtimeCandle(idElement, Number(time), Number(open), Number(high), Number(low), Number(close), Number(volume))
-      if (resolution === '1') {
+      if (props.resolution === 1) {
         document.title = `${Number(close).toFixed(2)} - ${symbol}`
       }
     })
