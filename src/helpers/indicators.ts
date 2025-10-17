@@ -17,124 +17,73 @@ export interface Marker {
   price: number;
 }
 
-
 /**
- * Tìm local extrema (swing high/low)
+ * Tìm swing high/low theo period nhất định (mặc định = 5)
  */
-function findSwingPoints(data: Candle[], window: number = 3) {
-  const highs: { index: number; price: number }[] = [];
-  const lows: { index: number; price: number }[] = [];
+function findSwingPoints(data: Candle[], period = 5) {
+  const highs: number[] = [];
+  const lows: number[] = [];
 
-  for (let i = window; i < data.length - window; i++) {
-    const slice = data.slice(i - window, i + window + 1);
-    const max = Math.max(...slice.map(c => c.high));
-    const min = Math.min(...slice.map(c => c.low));
-
-    if (data[i]?.high === max) highs.push({ index: i, price: max });
-    if (data[i]?.low === min) lows.push({ index: i, price: min });
+  for (let i = period; i < data.length - period; i++) {
+    const high = data[i].high;
+    const low = data[i].low;
+    const leftHigh = data.slice(i - period, i).every(d => d.high < high);
+    const rightHigh = data.slice(i + 1, i + 1 + period).every(d => d.high < high);
+    const leftLow = data.slice(i - period, i).every(d => d.low > low);
+    const rightLow = data.slice(i + 1, i + 1 + period).every(d => d.low > low);
+    if (leftHigh && rightHigh) highs.push(i);
+    if (leftLow && rightLow) lows.push(i);
   }
 
   return { highs, lows };
 }
 
 /**
- * Phát hiện mô hình Vai–Đầu–Vai (xác nhận)
+ * Phát hiện mô hình Head & Shoulders
  */
-function detectHeadAndShoulders(highs: { index: number; price: number }[]): number[] {
-  const signals: number[] = [];
-
+function detectHnsPattern(data: Candle[], highs: number[]) {
+  const indices: number[] = [];
   for (let i = 2; i < highs.length; i++) {
-    const left = highs[i - 2];
-    const head = highs[i - 1];
-    const right = highs[i];
+    const [l, h, r] = [highs[i - 2], highs[i - 1], highs[i]];
+    if (!data[l] || !data[h] || !data[r]) continue;
 
-    if (
-      head && right && left &&
-      head.price > left.price &&
-      head.price > right.price &&
-      Math.abs(left.price - right.price) / head.price < 0.03 &&
-      right.index - left.index <= 20
-    ) {
-      signals.push(head.index);
+    const left = data[l].high;
+    const head = data[h].high;
+    const right = data[r].high;
+
+    // Head phải cao hơn 2 vai
+    if (head > left && head > right && Math.abs(left - right) / head < 0.03) {
+      indices.push(r);
     }
   }
-
-  return signals;
+  return indices;
 }
 
 /**
- * Phát hiện mô hình Vai–Đầu–Vai Ngược (xác nhận)
+ * Phát hiện mô hình Inverse Head & Shoulders
  */
-function detectInverseHeadAndShoulders(lows: { index: number; price: number }[]): number[] {
-  const signals: number[] = [];
-
+function detectInverseHnsPattern(data: Candle[], lows: number[]) {
+  const indices: number[] = [];
   for (let i = 2; i < lows.length; i++) {
-    const left = lows[i - 2];
-    const head = lows[i - 1];
-    const right = lows[i];
+    const [l, h, r] = [lows[i - 2], lows[i - 1], lows[i]];
+    if (!data[l] || !data[h] || !data[r]) continue;
 
-    if (
-      head && right && left &&
-      head.price < left.price &&
-      head.price < right.price &&
-      Math.abs(left.price - right.price) / head.price < 0.03 &&
-      right.index - left.index <= 20
-    ) {
-      signals.push(head.index);
+    const left = data[l].low;
+    const head = data[h].low;
+    const right = data[r].low;
+
+    // Head phải thấp hơn 2 vai
+    if (head < left && head < right && Math.abs(left - right) / head < 0.03) {
+      indices.push(r);
     }
   }
-
-  return signals;
+  return indices;
 }
 
 /**
- * Dự đoán mô hình Vai–Đầu–Vai đang hình thành
- * Chỉ sử dụng dữ liệu trước đó (left và head) để dự đoán
+ * Hàm chính: sinh tín hiệu LONG, SHORT và CLOSE
  */
-function predictHeadAndShoulders(highs: { index: number; price: number }[]): number[] {
-  const predictions: number[] = [];
-  for (let i = 1; i < highs.length; i++) {
-    const left = highs[i - 1];
-    const head = highs[i];
-
-    if (
-      head && left &&
-      head.price > left.price * 1.02 && // Đầu cao hơn vai trái ít nhất 2%
-      head.index - left.index <= 20
-    ) {
-      // Dự đoán dựa trên vai trái và đầu, không cần vai phải
-      predictions.push(head.index);
-    }
-  }
-  return predictions;
-}
-
-/**
- * Dự đoán mô hình Vai–Đầu–Vai Ngược đang hình thành
- * Chỉ sử dụng dữ liệu trước đó (left và head) để dự đoán
- */
-function predictInverseHeadAndShoulders(lows: { index: number; price: number }[]): number[] {
-  const predictions: number[] = [];
-  for (let i = 1; i < lows.length; i++) {
-    const left = lows[i - 1];
-    const head = lows[i];
-
-    if (
-      head && left &&
-      head.price < left.price * 0.98 && // Đầu thấp hơn vai trái ít nhất 2%
-      head.index - left.index <= 20
-    ) {
-      // Dự đoán dựa trên vai trái và đầu, không cần vai phải
-      predictions.push(head.index);
-    }
-  }
-  return predictions;
-}
-
-/**
- * Hàm chính: sinh tín hiệu LONG/SHORT (xác nhận và dự đoán)
- */
-export const generateSignals = (candlestickData: CandlestickData[]) : Marker[] => {
+export const generateSignals = (candlestickData: CandlestickData[]): Marker[] => {
   const data: Candle[] = candlestickData.map(c => ({
     time: Number(c.time),
     open: c.open,
@@ -145,63 +94,72 @@ export const generateSignals = (candlestickData: CandlestickData[]) : Marker[] =
 
   if (data.length < 30) return [];
 
-  const { highs, lows } = findSwingPoints(data, 3);
+  const { highs, lows } = findSwingPoints(data, 5);
+  const hnsIndices = detectHnsPattern(data, highs);
+  const inverseHnsIndices = detectInverseHnsPattern(data, lows);
 
-  // Mô hình đã xác nhận
-  const hnsIndices = detectHeadAndShoulders(highs);
-  const inverseHnsIndices = detectInverseHeadAndShoulders(lows);
+  const markers: Marker[] = [];
+  let lastSignal: "LONG" | "SHORT" | null = null;
 
-  // Mô hình đang hình thành
-  const predictedHns = predictHeadAndShoulders(highs);
-  const predictedInverseHns = predictInverseHeadAndShoulders(lows);
+  // SHORT: Head & Shoulders
+  for (const i of hnsIndices) {
+    if (lastSignal === "LONG") {
+      // Đóng lệnh LONG trước đó
+      markers.push({
+        time: data[i - 1]?.time || data[i].time,
+        position: "belowBar",
+        color: "#ff9800",
+        shape: "circle",
+        text: "CLOSE LONG",
+        price: data[i - 1]?.close || data[i].close,
+      });
+    }
 
-  // Marker
-  const markers = [
-    // ✅ Xác nhận SHORT
-    ...hnsIndices.map(i => ({
-      time: Number(data[i]?.time) || 0,
-      position: "aboveBar" as const,
+    // Mở SHORT
+    markers.push({
+      time: data[i].time,
+      position: "aboveBar",
       color: "#ef5350",
       shape: "arrowDown",
       text: "SHORT (H&S)",
-      price: Number(data[i]?.close) || 0,
-    })),
+      price: data[i].close,
+    });
 
-    // ✅ Xác nhận LONG
-    ...inverseHnsIndices.map(i => ({
-      time: Number(data[i]?.time) || 0,
-      position: "belowBar" as const,
+    lastSignal = "SHORT";
+  }
+
+  // LONG: Inverse H&S
+  for (const i of inverseHnsIndices) {
+    if (lastSignal === "SHORT") {
+      // Đóng lệnh SHORT trước đó
+      markers.push({
+        time: data[i - 1]?.time || data[i].time,
+        position: "aboveBar",
+        color: "#2196f3",
+        shape: "circle",
+        text: "CLOSE SHORT",
+        price: data[i - 1]?.close || data[i].close,
+      });
+    }
+
+    // Mở LONG
+    markers.push({
+      time: data[i].time,
+      position: "belowBar",
       color: "#26a69a",
       shape: "arrowUp",
-      text: "LONG (Inv H&S)",
-      price: Number(data[i]?.close) || 0,
-    })),
+      text: "LONG (Inverse H&S)",
+      price: data[i].close,
+    });
 
-    // ⚠️ Dự đoán SHORT
-    ...predictedHns.map(i => ({
-      time: Number(data[i]?.time) || 0,
-      position: "aboveBar" as const,
-      color: "#ffca28",
-      shape: "circle",
-      text: "H&S forming",
-      price: Number(data[i]?.close) || 0,
-    })),
+    lastSignal = "LONG";
+  }
 
-    // ⚠️ Dự đoán LONG
-    ...predictedInverseHns.map(i => ({
-      time: Number(data[i]?.time) || 0,
-      position: "belowBar" as const,
-      color: "#ffca28",
-      shape: "circle",
-      text: "Inv H&S forming",
-      price: Number(data[i]?.close) || 0,
-    })),
-  ].sort((a, b) => a.time - b.time);
+  // Sắp xếp & lọc trùng theo time
+  const unique = new Map<number, Marker>();
+  for (const m of markers) {
+    if (!unique.has(m.time)) unique.set(m.time, m);
+  }
 
-  // Lọc trùng theo time
-  const uniqueMarkers = Array.from(
-    new Map(markers.map(m => [m.time, m])).values()
-  );
-
-  return uniqueMarkers;
+  return Array.from(unique.values()).sort((a, b) => a.time - b.time);
 };

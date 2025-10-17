@@ -8,6 +8,7 @@ import {
   type CandlestickData,
   type IChartApi,
   type ISeriesApi,
+  type ISeriesMarkersPluginApi,
   type UTCTimestamp,
 } from "lightweight-charts";
 import { generateSignals } from "@/helpers/indicators";
@@ -38,7 +39,9 @@ export class StockChart {
   private sma60Series!: ISeriesApi<"Line">;
   private ema15Series!: ISeriesApi<"Line">;
 
-  private timeLastMaker: undefined | number = undefined
+  private timeLastMaker: undefined | number = undefined;
+
+  private seriesMarkersNew!: ISeriesMarkersPluginApi<any>;
 
   constructor(symbol: string, resolution: number) {
     this.symbol = symbol;
@@ -90,6 +93,7 @@ export class StockChart {
     response: StockSSIDataResponse,
   ): void {
     this.initializeSeries(chart);
+    this.seriesMarkersNew = createSeriesMarkers(this.candlestickSeries, [])
 
     setTimeout(() => {
       const seenTimes = new Set<number>();
@@ -252,12 +256,12 @@ export class StockChart {
       color: close >= open ? "#26a69a" : "#ef5350",
     });
 
-    this.updateIndicators(idElement);
+    this.updateIndicators(idElement, time);
 
     this.candlestickSeries.update(newCandleData);
   }
 
-  private updateIndicators(idElement: string): void {
+  private updateIndicators(idElement: string, time: number): void {
     if (
       !this.candlestickSeries ||
       !this.macdSeries ||
@@ -336,16 +340,14 @@ export class StockChart {
       latestRsiD
     );
 
+
     const calculateData = candlestickData.length > 100 ? candlestickData.slice(-100) : candlestickData
     const markers = generateSignals(calculateData);
-    if (this.candlestickSeries) {
-      const latestMarker = markers.length ? [markers[markers.length - 1]] : [];
-      const latestMakerTime = latestMarker[0]?.time;
-      if (latestMarker.length > 0 && latestMakerTime != this.timeLastMaker) {
-        createSeriesMarkers(this.candlestickSeries, latestMarker)
-        this.timeLastMaker = latestMakerTime
-      }
+
+    if (this.seriesMarkersNew) {
+      this.seriesMarkersNew.setMarkers(markers)
     }
+
   }
 
   private initializeSeries(chart: IChartApi): void {
