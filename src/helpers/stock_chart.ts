@@ -38,6 +38,8 @@ export class StockChart {
   private sma60Series!: ISeriesApi<"Line">;
   private ema15Series!: ISeriesApi<"Line">;
 
+  private timeLastMaker: undefined | number = undefined
+
   constructor(symbol: string, resolution: number) {
     this.symbol = symbol;
     this.resolution = resolution;
@@ -120,6 +122,8 @@ export class StockChart {
       const markers = generateSignals(candlestickData);
       if (this.candlestickSeries) {
         createSeriesMarkers(this.candlestickSeries, markers)
+        this.timeLastMaker = markers[markers.length -1]?.time
+        localStorage.setItem('chart_markers', JSON.stringify(markers));
       }
 
       const { macd, signal, histogram } = calculateMACD(close);
@@ -333,9 +337,15 @@ export class StockChart {
       latestRsiD
     );
 
-    const markers = generateSignals(candlestickData);
+    const calculateData = candlestickData.length > 100 ? candlestickData.slice(-100) : candlestickData
+    const markers = generateSignals(calculateData);
     if (this.candlestickSeries) {
-      createSeriesMarkers(this.candlestickSeries, markers)
+      const latestMarker = markers.length ? [markers[markers.length - 1]] : [];
+      const latestMakerTime = latestMarker[0]?.time;
+      if (latestMakerTime != this.timeLastMaker) {
+        createSeriesMarkers(this.candlestickSeries, latestMarker)
+        this.timeLastMaker = latestMakerTime
+      }
     }
   }
 
