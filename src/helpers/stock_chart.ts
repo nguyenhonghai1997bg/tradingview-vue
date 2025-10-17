@@ -342,7 +342,7 @@ export class StockChart {
     if (this.candlestickSeries) {
       const latestMarker = markers.length ? [markers[markers.length - 1]] : [];
       const latestMakerTime = latestMarker[0]?.time;
-      if (latestMakerTime != this.timeLastMaker) {
+      if (latestMarker.length > 0 && latestMakerTime != this.timeLastMaker) {
         createSeriesMarkers(this.candlestickSeries, latestMarker)
         this.timeLastMaker = latestMakerTime
       }
