@@ -123,7 +123,6 @@ export class StockChart {
       if (this.candlestickSeries) {
         createSeriesMarkers(this.candlestickSeries, markers)
         this.timeLastMaker = markers[markers.length -1]?.time
-        localStorage.setItem('chart_markers', JSON.stringify(markers));
       }
 
       const { macd, signal, histogram } = calculateMACD(close);
@@ -239,7 +238,6 @@ export class StockChart {
       console.error("Candlestick or Volume series not initialized.");
       return;
     }
-
     const newCandleData: CandlestickData<UTCTimestamp> = {
       time: time as UTCTimestamp,
       open,
@@ -247,7 +245,6 @@ export class StockChart {
       low,
       close,
     };
-    this.candlestickSeries.update(newCandleData);
 
     this.volumeSeries.update({
       time: time as UTCTimestamp,
@@ -256,6 +253,8 @@ export class StockChart {
     });
 
     this.updateIndicators(idElement);
+
+    this.candlestickSeries.update(newCandleData);
   }
 
   private updateIndicators(idElement: string): void {

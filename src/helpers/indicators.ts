@@ -8,6 +8,16 @@ export interface Candle {
   close: number;
 }
 
+export interface Marker {
+  time: number;
+  position: string;
+  color: string;
+  shape: string;
+  text: string;
+  price: number;
+}
+
+
 /**
  * Tìm local extrema (swing high/low)
  */
@@ -124,7 +134,7 @@ function predictInverseHeadAndShoulders(lows: { index: number; price: number }[]
 /**
  * Hàm chính: sinh tín hiệu LONG/SHORT (xác nhận và dự đoán)
  */
-export const generateSignals = (candlestickData: CandlestickData[]) => {
+export const generateSignals = (candlestickData: CandlestickData[]) : Marker[] => {
   const data: Candle[] = candlestickData.map(c => ({
     time: Number(c.time),
     open: c.open,
