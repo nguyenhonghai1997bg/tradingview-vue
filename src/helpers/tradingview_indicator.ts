@@ -204,3 +204,155 @@ export function calculateFibonacci(start: number, end: number): FiboLevel[] {
       : start + diff * level // uptrend
   }));
 }
+// helper: EMA nhưng giữ NaN trước khi đủ dữ liệu (giữ nguyên từ trước)
+function emaWithNan(data: number[], period: number): number[] {
+  const n = data.length;
+  const result: number[] = new Array(n).fill(NaN);
+  if (period <= 0 || n === 0) return result;
+
+  let startIndex = -1;
+  for (let i = period - 1; i < n; i++) {
+    let ok = true;
+    for (let j = i - period + 1; j <= i; j++) {
+      if (isNaN(data[j])) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) {
+      startIndex = i;
+      break;
+    }
+  }
+  if (startIndex === -1) return result;
+
+  // initial SMA
+  let sum = 0;
+  for (let j = startIndex - period + 1; j <= startIndex; j++) sum += data[j];
+  let prevEma = sum / period;
+  result[startIndex] = prevEma;
+
+  const multiplier = 2 / (period + 1);
+  for (let i = startIndex + 1; i < n; i++) {
+    const val = data[i];
+    if (isNaN(val)) {
+      result[i] = NaN;
+      continue;
+    }
+    prevEma = (val - prevEma) * multiplier + prevEma;
+    result[i] = prevEma;
+  }
+
+  return result;
+}
+
+/**
+ * Robust SMIIO with selectable scaling:
+ * mode: "percent" => [-100, +100] (classic SMI scaled)
+ *       "normalized" => [-1, +1]
+ *       "zeroOne" => [0, 1] (DNSE-like)
+ */
+export function calculateSMIIO(
+  high: number[],
+  low: number[],
+  close: number[],
+  period = 14,
+  smoothA = 3,
+  smoothB = 3,
+  signalPeriod = 3,
+  mode: "percent" | "normalized" | "zeroOne" = "normalized"
+) {
+  const n = close.length;
+  const smi: number[] = new Array(n).fill(NaN);
+  const smiSignal: number[] = new Array(n).fill(NaN);
+  const smiHistogram: number[] = new Array(n).fill(NaN);
+
+  if (!high || !low || !close || high.length !== n || low.length !== n) {
+    return { smi, smiSignal, smiHistogram };
+  }
+  if (n === 0) return { smi, smiSignal, smiHistogram };
+
+  // compute diff = close - midpoint, range = (hh - ll) / 2  (same as trước)
+  const diffArr: number[] = new Array(n).fill(NaN);
+  const rangeArr: number[] = new Array(n).fill(NaN);
+  for (let i = 0; i < n; i++) {
+    if (i < period - 1) {
+      diffArr[i] = NaN;
+      rangeArr[i] = NaN;
+      continue;
+    }
+    const sliceHigh = high.slice(i - period + 1, i + 1);
+    const sliceLow = low.slice(i - period + 1, i + 1);
+    if (sliceHigh.some(isNaN) || sliceLow.some(isNaN)) {
+      diffArr[i] = NaN;
+      rangeArr[i] = NaN;
+      continue;
+    }
+    const hh = Math.max(...sliceHigh);
+    const ll = Math.min(...sliceLow);
+    const mid = (hh + ll) / 2;
+    diffArr[i] = close[i] - mid;
+    rangeArr[i] = (hh - ll) / 2;
+  }
+
+  // double smoothing with safe EMA
+  const diffEMA1 = emaWithNan(diffArr, smoothA);
+  const diffEMA2 = emaWithNan(diffEMA1, smoothB);
+  const rangeEMA1 = emaWithNan(rangeArr, smoothA);
+  const rangeEMA2 = emaWithNan(rangeEMA1, smoothB);
+
+  // compute a small robust floor for denominator:
+  // use median absolute of rangeEMA2 (ignoring NaN) * small factor as backup
+  const validRanges = rangeEMA2.filter((v) => !isNaN(v) && Math.abs(v) > 0);
+  const tiny = 1e-10;
+  let avgRange = 0;
+  if (validRanges.length) {
+    // use mean of absolute validRanges as a stable scale
+    avgRange = validRanges.reduce((s, x) => s + Math.abs(x), 0) / validRanges.length;
+  }
+
+  const epsFactor = 1e-3; // floor = max(abs(range), avgRange * epsFactor, tiny)
+  const floorFromAvg = avgRange * epsFactor;
+
+  for (let i = 0; i < n; i++) {
+    const d = diffEMA2[i];
+    const r = rangeEMA2[i];
+    if (isNaN(d) || isNaN(r)) {
+      smi[i] = NaN;
+      continue;
+    }
+    const denom = Math.max(Math.abs(r), floorFromAvg, tiny);
+    let raw = d / denom; // raw can be large if denom tiny; we clamped denom
+
+    // Now scale according to mode:
+    if (mode === "percent") {
+      // scale to ±100, but clamp to avoid huge spikes
+      raw = raw * 100;
+      // clamp to reasonable bounds
+      const clampMax = 500; // avoid outliers
+      if (raw > clampMax) raw = clampMax;
+      if (raw < -clampMax) raw = -clampMax;
+      smi[i] = raw;
+    } else if (mode === "normalized") {
+      // scale to [-1, 1] using tanh to compress outliers smoothly
+      smi[i] = Math.tanh(raw); // keeps in (-1,1)
+    } else {
+      // zeroOne: map normalized [-1,1] -> [0,1]
+      smi[i] = 0.5 * (1 + Math.tanh(raw));
+    }
+  }
+
+  // signal line: EMA of smi (use emaWithNan — note: for "percent" the smi values are larger)
+  const smiForSignal = smi.map((v) => (isNaN(v) ? NaN : v));
+  const smiSignalRaw = emaWithNan(smiForSignal, signalPeriod);
+  for (let i = 0; i < n; i++) {
+    smiSignal[i] = smiSignalRaw[i];
+    if (!isNaN(smi[i]) && !isNaN(smiSignal[i])) {
+      smiHistogram[i] = smi[i] - smiSignal[i];
+    } else {
+      smiHistogram[i] = NaN;
+    }
+  }
+
+  return { smi, smiSignal, smiHistogram };
+}

@@ -1,5 +1,7 @@
 import type { CandlestickData } from "lightweight-charts";
 import { indi1Marker } from "./indi1";
+import { indi2Marker } from "./indi2Marker";
+import { indi3Marker } from "./indi3Marker";
 
 export interface Candle {
   time: number;
@@ -33,7 +35,11 @@ export const generateSignals = (candlestickData: CandlestickData[]): Marker[] =>
   if (data.length < 30) return [];
   const markers: Marker[] = [];
 
-  markers.push(...indi1Marker(data))
+  // markers.push(...indi1Marker(data))
+
+  markers.push(...indi2Marker(data))
+  // markers.push(...indi3Marker(data))
+
 
   // Sắp xếp & lọc trùng theo time
   const unique = new Map<number, Marker>();

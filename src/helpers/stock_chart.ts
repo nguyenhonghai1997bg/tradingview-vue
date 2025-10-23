@@ -21,6 +21,7 @@ import {
   calculateSMA,
   calculateStochRSI,
   calculateStochRSI_KD,
+  calculateSMIIO
 } from "@/helpers/tradingview_indicator";
 
 export class StockChart {
@@ -31,6 +32,11 @@ export class StockChart {
   private macdSeries!: ISeriesApi<"Line">;
   private signalSeries!: ISeriesApi<"Line">;
   private histogramSeries!: ISeriesApi<"Histogram">;
+
+  private smiioSeries!: ISeriesApi<"Line">;
+  private smiioSignalSeries!: ISeriesApi<"Line">;
+  private smiioHistogramSeries!: ISeriesApi<"Histogram">;
+
   private kSeries!: ISeriesApi<"Line">;
   private dSeries!: ISeriesApi<"Line">;
   private jSeries!: ISeriesApi<"Line">;
@@ -136,6 +142,7 @@ export class StockChart {
       const { rsiK, rsiD } = calculateStochRSI_KD(stochRSI, 3, 3);
       const sma60Value = calculateSMA(close, 60);
       const ema15Value = calculateEMA(close, 15);
+      const { smi, smiSignal, smiHistogram } = calculateSMIIO(high, low, close)
 
       this.candlestickSeries?.setData(candlestickData);
       this.macdSeries?.setData(formatSeriesData(times, macd));
@@ -156,6 +163,11 @@ export class StockChart {
         }))
       );
 
+      this.smiioSeries?.setData(formatSeriesData(times, smi));
+      this.smiioSignalSeries?.setData(formatSeriesData(times, smiSignal));
+      this.smiioHistogramSeries?.setData(formatHistogramData(times, smiHistogram));
+
+
       const panes = chart.panes();
       panes[0]?.setHeight(400);
 
@@ -173,6 +185,9 @@ export class StockChart {
       const latestHistogram = histogram.length ? histogram[histogram.length - 1] : undefined;
       const latestRsiK = rsiK.length ? rsiK[rsiK.length - 1] : undefined;
       const latestRsiD = rsiD.length ? rsiD[rsiD.length - 1] : undefined;
+      const latestSMI = smi.at(-1);
+      const latestSMISignal = smiSignal.at(-1);
+      const latestSMIHistogram = smiHistogram.at(-1);
 
       this.updateLegends(
         idElement,
@@ -187,7 +202,10 @@ export class StockChart {
         latestSignal,
         latestHistogram,
         latestRsiK,
-        latestRsiD
+        latestRsiD,
+        latestSMI,
+        latestSMISignal,
+        latestSMIHistogram
       );
 
       chart.subscribeCrosshairMove((param) => {
@@ -205,25 +223,33 @@ export class StockChart {
             latestSignal,
             latestHistogram,
             latestRsiK,
-            latestRsiD
+            latestRsiD,
+            latestSMI,
+            latestSMISignal,
+            latestSMIHistogram
           );
           return;
         }
 
-        const candlestick = param.seriesData.get(this.candlestickSeries!) as CandlestickData;
-        const volume = (param.seriesData.get(this.volumeSeries!) as { value?: number })?.value;
-        const sma60 = (param.seriesData.get(this.sma60Series!) as { value?: number })?.value;
-        const ema15 = (param.seriesData.get(this.ema15Series!) as { value?: number })?.value;
-        const k = (param.seriesData.get(this.kSeries!) as { value?: number })?.value;
-        const d = (param.seriesData.get(this.dSeries!) as { value?: number })?.value;
-        const j = (param.seriesData.get(this.jSeries!) as { value?: number })?.value;
-        const macdVal = (param.seriesData.get(this.macdSeries!) as { value?: number })?.value;
-        const signalVal = (param.seriesData.get(this.signalSeries!) as { value?: number })?.value;
-        const histogramVal = (param.seriesData.get(this.histogramSeries!) as { value?: number })?.value;
-        const rsiKVal = (param.seriesData.get(this.rsiSeriesK!) as { value?: number })?.value;
-        const rsiDVal = (param.seriesData.get(this.rsiSeriesD!) as { value?: number })?.value;
-
-        this.updateLegends(idElement, candlestick, volume, sma60, ema15, k, d, j, macdVal, signalVal, histogramVal, rsiKVal, rsiDVal);
+        const cs = (s: any) => (param.seriesData.get(s) as { value?: number })?.value;
+        this.updateLegends(
+          idElement,
+          param.seriesData.get(this.candlestickSeries!) as CandlestickData,
+          cs(this.volumeSeries),
+          cs(this.sma60Series),
+          cs(this.ema15Series),
+          cs(this.kSeries),
+          cs(this.dSeries),
+          cs(this.jSeries),
+          cs(this.macdSeries),
+          cs(this.signalSeries),
+          cs(this.histogramSeries),
+          cs(this.rsiSeriesK),
+          cs(this.rsiSeriesD),
+          cs(this.smiioSeries),
+          cs(this.smiioSignalSeries),
+          cs(this.smiioHistogramSeries)
+        );
       });
 
       // chart.timeScale().fitContent();
@@ -232,9 +258,6 @@ export class StockChart {
     setTimeout(() => {
       this.attachPaneLegends(idElement);
     }, 100);
-
-
-    
   }
 
   public updateRealtimeCandle(idElement: string, time: number, open: number, high: number, low: number, close: number, volume: number): void {
@@ -446,6 +469,23 @@ export class StockChart {
       crosshairMarkerVisible: false,
     });
 
+     this.smiioSeries = chart.addSeries(LineSeries, {
+      color: "#0000FF",
+      lineWidth: 1,
+      priceLineVisible: false,
+      crosshairMarkerVisible: false,
+    });
+    this.smiioSignalSeries = chart.addSeries(LineSeries, {
+      color: "#FFA500",
+      lineWidth: 1,
+      priceLineVisible: false,
+      crosshairMarkerVisible: false,
+    });
+    this.smiioHistogramSeries = chart.addSeries(HistogramSeries, {
+      priceFormat: { type: "volume" },
+      priceLineVisible: false,
+    });
+
     this.candlestickSeries.moveToPane(0);
     this.volumeSeries.moveToPane(0);
     this.kSeries.moveToPane(1);
@@ -456,6 +496,11 @@ export class StockChart {
     this.histogramSeries.moveToPane(2);
     this.rsiSeriesK.moveToPane(3);
     this.rsiSeriesD.moveToPane(3);
+
+    this.smiioSeries.moveToPane(4);
+    this.smiioSignalSeries.moveToPane(4);
+    this.smiioHistogramSeries.moveToPane(4);
+
   }
 
   private attachPaneLegends(idElement: string): void {
@@ -470,6 +515,7 @@ export class StockChart {
       { trIndex: 2, id: "pane-1-legend" },
       { trIndex: 4, id: "pane-2-legend" },
       { trIndex: 6, id: "pane-3-legend" },
+      { trIndex: 8, id: "pane-4-legend" }
     ];
 
     mapping.forEach(({ trIndex, id }) => {
@@ -510,7 +556,10 @@ export class StockChart {
     signalVal?: number,
     histogramVal?: number,
     rsiKVal?: number,
-    rsiDVal?: number
+    rsiDVal?: number,
+    smiVal?: number,
+    smiSignal?: number,
+    smiHistogram?: number
   ): void {
     const container = document.querySelector(`#${idElement} .tv-lightweight-charts`);
     if (!container) return;
@@ -519,6 +568,7 @@ export class StockChart {
     const pane1Legend = container.querySelectorAll("#pane-1-legend")[0];
     const pane2Legend = container.querySelectorAll("#pane-2-legend")[0];
     const pane3Legend = container.querySelectorAll("#pane-3-legend")[0];
+    const pane4Legend = container.querySelectorAll("#pane-4-legend")[0]; // thêm pane cho SMIIO
 
     if (pane0Legend) {
       pane0Legend.innerHTML = `
@@ -535,6 +585,7 @@ export class StockChart {
         </div>
       `;
     }
+
     if (pane1Legend) {
       pane1Legend.innerHTML = `
         <div style="display: flex; gap: 10px;" class="value-data">
@@ -545,6 +596,7 @@ export class StockChart {
         </div>
       `;
     }
+
     if (pane2Legend) {
       pane2Legend.innerHTML = `
         <div style="display: flex; gap: 10px;" class="value-data">
@@ -555,12 +607,24 @@ export class StockChart {
         </div>
       `;
     }
+
     if (pane3Legend) {
       pane3Legend.innerHTML = `
         <div style="display: flex; gap: 10px;" class="value-data">
-          <span>StochRSI </span>
+          <span>StochRSI</span>
           <span style="color: #1E90FF;">■ K: ${this.formatValue(rsiKVal)}</span>
           <span style="color: red;">■ D: ${this.formatValue(rsiDVal)}</span>
+        </div>
+      `;
+    }
+
+    if (pane4Legend) {
+      pane4Legend.innerHTML = `
+        <div style="display: flex; gap: 10px;" class="value-data">
+          <span>SMIIO</span>
+          <span style="color: #00BFFF;">■ SMI: ${this.formatValue(smiVal)}</span>
+          <span style="color: #FFA500;">■ Signal: ${this.formatValue(smiSignal)}</span>
+          <span style="color: #26a69a;">■ Histogram: ${this.formatValue(smiHistogram)}</span>
         </div>
       `;
     }
